@@ -28,6 +28,8 @@ function pythongrader_asset_bust() {
         __DIR__ . '/js/pythongrader.js',
         __DIR__ . '/js/runtime.js',
         __DIR__ . '/js/results.js',
+        __DIR__ . '/js/udemy-export.js',
+        __DIR__ . '/js/vendor/fflate.min.js',
         __DIR__ . '/worker/pyodide-worker.js',
         __DIR__ . '/worker/harness.py',
         __DIR__ . '/worker/result.py',

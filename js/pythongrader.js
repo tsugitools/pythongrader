@@ -621,6 +621,105 @@
         });
     }
 
+    function currentAuthorExercise() {
+        // Prefer live fields (including CKEditor) over stale JSON textarea.
+        syncAuthorJsonFromFields();
+        return collectAuthorExercise();
+    }
+
+    function renderUdemyPanel(preview) {
+        var host = $('#udemy-panel');
+        if (!host) return;
+        host.hidden = false;
+        host.innerHTML = '';
+        host.appendChild(el('h3', {
+            text: preview.ok ? 'Udemy export — compatible' : 'Udemy export — not exportable'
+        }));
+        host.appendChild(el('pre', { text: preview.markdown || '' }));
+        var actions = el('div', { className: 'udemy-actions' });
+        var btnDl = el('button', {
+            type: 'button',
+            className: 'btn btn-primary',
+            id: 'btnUdemyDownload',
+            text: 'Download ZIP'
+        });
+        if (!preview.ok) btnDl.disabled = true;
+        var btnClose = el('button', {
+            type: 'button',
+            className: 'btn',
+            text: 'Close'
+        });
+        actions.appendChild(btnDl);
+        actions.appendChild(btnClose);
+        host.appendChild(actions);
+
+        btnClose.addEventListener('click', function () {
+            host.hidden = true;
+            host.innerHTML = '';
+        });
+        btnDl.addEventListener('click', function () {
+            authorDownloadUdemyZip();
+        });
+    }
+
+    function authorExportUdemyPreview() {
+        var Export = window.PythonGraderUdemyExport;
+        if (!Export) {
+            setStatus('error', 'Udemy export module not loaded');
+            return;
+        }
+        var next;
+        try {
+            next = currentAuthorExercise();
+        } catch (e) {
+            setStatus('error', e.message || String(e));
+            return;
+        }
+        setStatus('pending', 'Checking Udemy compatibility…');
+        var preview = Export.preview(next);
+        renderUdemyPanel(preview);
+        if (preview.ok) {
+            setStatus('success', 'Compatible — review the report, then Download ZIP');
+        } else {
+            setStatus('error', 'Not exportable — see Udemy export panel');
+        }
+    }
+
+    function authorDownloadUdemyZip() {
+        var Export = window.PythonGraderUdemyExport;
+        if (!Export) {
+            setStatus('error', 'Udemy export module not loaded');
+            return;
+        }
+        if (!window.fflate) {
+            setStatus('error', 'ZIP library (fflate) not loaded');
+            return;
+        }
+        var next;
+        try {
+            next = currentAuthorExercise();
+        } catch (e) {
+            setStatus('error', e.message || String(e));
+            return;
+        }
+        setStatus('pending', 'Building Udemy ZIP…');
+        try {
+            var result = Export.exportZip(next);
+            renderUdemyPanel({
+                ok: result.ok,
+                markdown: result.markdown,
+                report: result.report
+            });
+            if (result.ok) {
+                setStatus('success', 'Downloaded ' + result.filename);
+            } else {
+                setStatus('error', 'Not exportable — see Udemy export panel');
+            }
+        } catch (err) {
+            setStatus('error', (err && err.message) || String(err));
+        }
+    }
+
     function renderAuthor() {
         destroyPromptEditor().then(function () {
             renderAuthorBody();
@@ -669,8 +768,10 @@
                 el('button', { type: 'button', className: 'btn btn-primary', id: 'btnSave', text: 'Save assignment' }),
                 el('button', { type: 'button', className: 'btn', id: 'btnSyncJson', text: 'Refresh JSON from fields' }),
                 el('button', { type: 'button', className: 'btn', id: 'btnLoadJson', text: 'Apply JSON to fields' }),
+                el('button', { type: 'button', className: 'btn', id: 'btnUdemyExport', text: 'Export to Udemy' }),
                 el('span', { id: 'status', 'data-state': '', 'aria-live': 'polite' })
-            ])
+            ]),
+            el('div', { id: 'udemy-panel', className: 'udemy-panel', hidden: true })
         ]));
 
         loadAuthorFieldsFromExercise(exercise);
@@ -694,6 +795,7 @@
                 setStatus('error', 'Invalid JSON: ' + e.message);
             }
         });
+        $('#btnUdemyExport').addEventListener('click', authorExportUdemyPreview);
     }
 
     function boot() {

@@ -133,6 +133,8 @@ ClassicEditor.defaultConfig = {
     }
 };
 </script>
+<script src="js/vendor/fflate.min.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>
+<script src="js/udemy-export.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>
 <?php endif; ?>
 <script src="js/runtime.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>
 <script src="js/results.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>

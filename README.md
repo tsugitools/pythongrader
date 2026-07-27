@@ -27,6 +27,10 @@ python3 scripts/generate-py4e-assignments.py
 2. **Run / Restart** — explore output without scoring.
 3. **Grade** — runs `unittest` evaluation, records an attempt, and submits an LTI grade (`earned / maximum_points`).
 
+## Export to Udemy
+
+In **Edit** mode, click **Export to Udemy** to preview compatibility, then **Download ZIP**. The ZIP is built entirely in the browser (`fflate`) and is never written on the server. Package members: `starter.py`, `solution.py`, `evaluation.py`, `instructions.md`, optional `hints.md` / `solution-explanation.md`, `manifest.json`, and `COMPATIBILITY.md`. Assignments with repository assets or non-empty `packages` are reported as not exportable in Phase 1.
+
 ## Phase 0 spike
 
 `spike/index.html` is a static runtime proof (no Tsugi). Serve the tool root over HTTP and open `/spike/index.html` if you need to debug the worker in isolation.
