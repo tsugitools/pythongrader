@@ -3,7 +3,7 @@
  * Assignment defaults, built-in catalog resolution, and first-launch preload.
  *
  * Priority when loading a placement:
- *   1. Built-in key from Settings, else LTI custom exercise=, else ?exercise=
+ *   1. Built-in key via Settings::linkDefaultConfigurationFromLaunch (Settings / LTI custom / ?exercise=)
  *   2. Valid assignment already in lti_link.json
  *   3. Full assignment in LTI custom_config / ?inherit= / ?exercise= as rlid
  *   4. Empty stub
@@ -104,40 +104,6 @@ function pythongrader_decode_exercise_json($raw) {
 }
 
 /**
- * Resolve built-in assignment key.
- *
- * @return string|null
- */
-function pythongrader_resolve_exercise_key() {
-    global $LINK;
-
-    $assignments = pythongrader_assignment_catalog();
-    $assn = null;
-    if ($LINK) {
-        $assn = Settings::linkGetCustom('exercise');
-        if ($assn === '0' || $assn === 0 || $assn === false || $assn === ''
-            || !isset($assignments[$assn])) {
-            $assn = null;
-        }
-    }
-
-    if (!$assn && isset($_GET['exercise'])) {
-        $g = $_GET['exercise'];
-        if (is_string($g) && isset($assignments[$g])) {
-            $assn = $g;
-            if ($LINK && method_exists($LINK, 'settingsSet')) {
-                $LINK->settingsSet('exercise', $assn);
-            }
-        }
-    }
-
-    if ($assn && isset($assignments[$assn])) {
-        return $assn;
-    }
-    return null;
-}
-
-/**
  * Pull full assignment JSON from LTI custom_config, then lessons.json.
  */
 function pythongrader_load_custom_exercise() {
@@ -189,7 +155,10 @@ function pythongrader_load_custom_exercise() {
  * @return array{exercise: array, assignmentKey: ?string}
  */
 function pythongrader_load_exercise($LINK) {
-    $assignmentKey = pythongrader_resolve_exercise_key();
+    $assignmentKey = Settings::linkDefaultConfigurationFromLaunch(
+        'exercise',
+        array_keys(pythongrader_assignment_catalog())
+    );
 
     $raw = null;
     if ($LINK && method_exists($LINK, 'getJson')) {
