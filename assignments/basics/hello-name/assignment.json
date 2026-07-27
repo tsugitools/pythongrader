@@ -1,0 +1,53 @@
+{
+  "type": "pythongrader",
+  "schema_version": 1,
+  "id": "basics-hello-name-001",
+  "assignment_version": 1,
+  "title": "Hello, Name",
+  "prompt": "<p>Read a name and print <code>Hello NAME</code>.</p>",
+  "files": {
+    "student.py": {
+      "mode": "editable",
+      "starter": "name = input('Enter your name: ')\n# Print the greeting\n",
+      "solution": "name = input('Enter your name: ')\nprint('Hello', name)\n"
+    }
+  },
+  "run": {
+    "stdin": "Chuck\n",
+    "timeout_ms": 5000
+  },
+  "evaluation": {
+    "filename": "evaluation.py",
+    "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nclass HelloNameTests(unittest.TestCase):\n    def run_student(self, name):\n        output = io.StringIO()\n        with patch('builtins.input', return_value=name):\n            with patch('sys.stdout', output):\n                runpy.run_path('student.py', run_name='__main__')\n        return output.getvalue().strip()\n\n    def test_chuck(self):\n        self.assertEqual(self.run_student('Chuck'), 'Hello Chuck')\n\n    def test_ada(self):\n        self.assertEqual(self.run_student('Ada'), 'Hello Ada')\n",
+    "tests": {
+      "HelloNameTests.test_chuck": {
+        "title": "Greets Chuck",
+        "group": "Basic behavior",
+        "points": 5,
+        "feedback": "Read the name and include it in the printed greeting.",
+        "hints": [
+          "Pass both strings to print().",
+          "The expected output is: Hello Chuck"
+        ]
+      },
+      "HelloNameTests.test_ada": {
+        "title": "Works with another name",
+        "group": "General behavior",
+        "points": 5,
+        "feedback": "Do not hard-code the example name."
+      }
+    }
+  },
+  "assets": [],
+  "packages": [],
+  "grading": {
+    "maximum_points": 10,
+    "partial_credit": true
+  },
+  "solution_explanation": "The program reads one string and passes it to print with the greeting.",
+  "exports": {
+    "udemy": {
+      "enabled": true
+    }
+  }
+}

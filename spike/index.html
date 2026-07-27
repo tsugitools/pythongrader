@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PythonGrader Phase 0 Spike</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #fff;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #656d76;
+      --accent: #0969da;
+      --ok: #1a7f37;
+      --fail: #cf222e;
+      --warn: #9a6700;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.45;
+    }
+    header {
+      padding: 1rem 1.25rem;
+      background: #24292f;
+      color: #fff;
+    }
+    header h1 {
+      margin: 0 0 0.25rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    header p {
+      margin: 0;
+      color: #c9d1d9;
+      font-size: 0.9rem;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      padding: 1rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    @media (max-width: 900px) {
+      main { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+    }
+    .panel h2 {
+      margin: 0 0 0.6rem;
+      font-size: 1rem;
+    }
+    .prompt {
+      grid-column: 1 / -1;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin: 0.5rem 0 0.25rem;
+    }
+    textarea {
+      width: 100%;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem;
+      resize: vertical;
+      background: #fafbfc;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin: 0.75rem 0 0.25rem;
+    }
+    button {
+      font: inherit;
+      font-size: 0.9rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+    }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #status {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    #status[data-state="ready"] { color: var(--ok); }
+    #status[data-state="running"] { color: var(--warn); }
+    #status[data-state="timeout"],
+    #status[data-state="worker_error"],
+    #status[data-state="grader_error"] { color: var(--fail); }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.82rem;
+      background: #f6f8fa;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.6rem;
+      min-height: 3rem;
+      max-height: 220px;
+      overflow: auto;
+    }
+    .test {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.55rem 0.7rem;
+      margin: 0.4rem 0;
+    }
+    .test.pass { border-left: 4px solid var(--ok); }
+    .test.fail,
+    .test.error,
+    .test.grader_error,
+    .test.timeout { border-left: 4px solid var(--fail); }
+    .test.skip { border-left: 4px solid var(--warn); }
+    .test-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .test-meta {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 0.15rem;
+    }
+    .score {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .hint {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 0.35rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PythonGrader — Phase 0 Spike</h1>
+    <p>Pyodide Web Worker proof: Run / Grade / timeout recovery. No Tsugi yet.</p>
+  </header>
+
+  <main>
+    <section class="panel prompt">
+      <h2 id="title">Loading assignment…</h2>
+      <div id="prompt"></div>
+      <p class="hint" id="dirty-hint">Edit source or stdin, then Run before Grade.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Editor</h2>
+      <label for="student-source">student.py</label>
+      <textarea id="student-source" rows="12" spellcheck="false" aria-label="Student Python source"></textarea>
+
+      <label for="stdin">Standard input</label>
+      <textarea id="stdin" rows="3" spellcheck="false" aria-label="Standard input"></textarea>
+
+      <div class="toolbar">
+        <button type="button" class="primary" id="btn-run">Run / Restart</button>
+        <button type="button" id="btn-grade" disabled>Grade</button>
+        <button type="button" id="btn-starter">Load starter</button>
+        <button type="button" id="btn-solution">Load solution</button>
+        <button type="button" id="btn-loop">Paste infinite loop</button>
+        <span id="status" data-state="loading" aria-live="polite">Loading Python…</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Output</h2>
+      <label for="stdout">stdout</label>
+      <pre id="stdout" tabindex="0"></pre>
+      <label for="stderr">stderr / errors</label>
+      <pre id="stderr" tabindex="0"></pre>
+    </section>
+
+    <section class="panel" style="grid-column: 1 / -1;">
+      <h2>Test results</h2>
+      <div class="score" id="score"></div>
+      <div id="results"></div>
+    </section>
+  </main>
+
+  <script src="../js/runtime.js"></script>
+  <script>
+(function () {
+  'use strict';
+
+  var assignment = null;
+  var runtime = null;
+
+  var el = {
+    title: document.getElementById('title'),
+    prompt: document.getElementById('prompt'),
+    source: document.getElementById('student-source'),
+    stdin: document.getElementById('stdin'),
+    status: document.getElementById('status'),
+    stdout: document.getElementById('stdout'),
+    stderr: document.getElementById('stderr'),
+    score: document.getElementById('score'),
+    results: document.getElementById('results'),
+    dirtyHint: document.getElementById('dirty-hint'),
+    btnRun: document.getElementById('btn-run'),
+    btnGrade: document.getElementById('btn-grade'),
+    btnStarter: document.getElementById('btn-starter'),
+    btnSolution: document.getElementById('btn-solution'),
+    btnLoop: document.getElementById('btn-loop')
+  };
+
+  function setStatus(state, text) {
+    el.status.dataset.state = state || '';
+    el.status.textContent = text || state || '';
+  }
+
+  function updateGradeButton() {
+    var ok = runtime && runtime.canGrade() && !el.btnRun.disabled;
+    el.btnGrade.disabled = !ok;
+    if (!runtime) {
+      el.dirtyHint.textContent = 'Waiting for runtime…';
+    } else if (!runtime.isReady()) {
+      el.dirtyHint.textContent = 'Loading Python…';
+    } else if (!runtime.isClean()) {
+      el.dirtyHint.textContent = 'Source is dirty — Run before Grade.';
+    } else {
+      el.dirtyHint.textContent = 'Source is clean — Grade is enabled.';
+    }
+  }
+
+  function setBusy(busy) {
+    el.btnRun.disabled = busy;
+    if (busy) {
+      el.btnGrade.disabled = true;
+    } else {
+      updateGradeButton();
+    }
+  }
+
+  function onEdit() {
+    if (!runtime) return;
+    runtime.bumpSourceRevision();
+    updateGradeButton();
+  }
+
+  function loadStarter() {
+    if (!assignment) return;
+    el.source.value = assignment.files['student.py'].starter;
+    el.stdin.value = (assignment.run && assignment.run.stdin) || '';
+    onEdit();
+  }
+
+  function loadSolution() {
+    if (!assignment) return;
+    el.source.value = assignment.files['student.py'].solution;
+    el.stdin.value = (assignment.run && assignment.run.stdin) || '';
+    onEdit();
+  }
+
+  function renderRun(msg) {
+    el.stdout.textContent = (msg && msg.stdout) || '';
+    var errParts = [];
+    if (msg && msg.stderr) errParts.push(msg.stderr);
+    if (msg && msg.exception) {
+      errParts.push(
+        (msg.exception.type || 'Exception') + ': ' + (msg.exception.message || '')
+      );
+      if (msg.exception.traceback) errParts.push(msg.exception.traceback);
+    }
+    el.stderr.textContent = errParts.join('\n');
+  }
+
+  function renderGrade(msg) {
+    renderRun(msg);
+    if (!msg) {
+      el.score.textContent = '';
+      el.results.innerHTML = '';
+      return;
+    }
+    if (msg.status === 'grader_error') {
+      el.score.textContent = 'Grader error';
+      el.results.innerHTML =
+        '<div class="test grader_error"><div class="test-head">Assignment / harness error</div>' +
+        '<pre>' + escapeHtml(msg.message || '') + '\n' + escapeHtml(msg.traceback || '') +
+        '</pre></div>';
+      return;
+    }
+    el.score.textContent =
+      'Score: ' + (msg.earned || 0) + ' / ' + (msg.possible || 0) +
+      (msg.duration_ms != null ? '  (' + msg.duration_ms + ' ms)' : '');
+    el.results.innerHTML = (msg.tests || []).map(function (t) {
+      return (
+        '<div class="test ' + escapeAttr(t.status) + '">' +
+          '<div class="test-head">' +
+            '<span>' + escapeHtml(t.title || t.id) + '</span>' +
+            '<span>' + escapeHtml(String(t.status)) +
+              ' · ' + t.earned + '/' + t.possible + '</span>' +
+          '</div>' +
+          (t.group ? '<div class="test-meta">' + escapeHtml(t.group) + '</div>' : '') +
+          (t.message ? '<pre>' + escapeHtml(t.message) + '</pre>' : '') +
+          (t.feedback && t.status !== 'pass'
+            ? '<div class="hint">' + escapeHtml(t.feedback) + '</div>'
+            : '') +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/'/g, '&#39;');
+  }
+
+  function timeoutMs() {
+    var t = assignment && assignment.run && assignment.run.timeout_ms;
+    return typeof t === 'number' ? t : 5000;
+  }
+
+  function doRun() {
+    setBusy(true);
+    setStatus('running', 'Running…');
+    el.score.textContent = '';
+    el.results.innerHTML = '';
+    runtime
+      .run(el.source.value, el.stdin.value, timeoutMs())
+      .then(function (msg) {
+        renderRun(msg);
+        setStatus('complete', 'Run complete (' + (msg.duration_ms || 0) + ' ms)');
+        setBusy(false);
+      })
+      .catch(function (err) {
+        if (err && err.code === 'timeout') {
+          el.stdout.textContent = '';
+          el.stderr.textContent = err.message;
+          setStatus('timeout', 'Timed out — restarting worker…');
+          var recovered = err.recovered || Promise.resolve();
+          recovered
+            .then(function () {
+              setStatus('ready', 'Ready again after timeout');
+            })
+            .catch(function (initErr) {
+              setStatus('worker_error', (initErr && initErr.message) || 'Restart failed');
+            })
+            .finally(function () {
+              setBusy(false);
+              updateGradeButton();
+            });
+          return;
+        }
+        el.stderr.textContent = (err && err.message) || String(err);
+        setStatus('worker_error', 'Run failed');
+        setBusy(false);
+        updateGradeButton();
+      });
+  }
+
+  function doGrade() {
+    if (!runtime.canGrade()) {
+      setStatus('grader_error', 'Run current source before Grade');
+      return;
+    }
+    setBusy(true);
+    setStatus('running', 'Grading…');
+    var evaluation = assignment.evaluation.source;
+    var meta = assignment.evaluation.tests || {};
+    var grading = assignment.grading || {};
+    runtime
+      .grade(el.source.value, evaluation, meta, grading, timeoutMs())
+      .then(function (msg) {
+        renderGrade(msg);
+        if (msg.status === 'grader_error') {
+          setStatus('grader_error', 'Grader error');
+        } else {
+          setStatus(
+            'complete',
+            'Grade complete: ' + msg.earned + '/' + msg.possible
+          );
+        }
+        setBusy(false);
+      })
+      .catch(function (err) {
+        if (err && err.code === 'timeout') {
+          renderGrade({
+            status: 'complete',
+            earned: 0,
+            possible: (assignment.grading && assignment.grading.maximum_points) || 0,
+            tests: [
+              {
+                id: 'timeout',
+                title: 'Timeout',
+                status: 'timeout',
+                earned: 0,
+                possible: (assignment.grading && assignment.grading.maximum_points) || 0,
+                message: err.message,
+                feedback: ''
+              }
+            ]
+          });
+          setStatus('timeout', 'Timed out — restarting worker…');
+          var recovered = err.recovered || Promise.resolve();
+          recovered
+            .then(function () {
+              setStatus('ready', 'Ready again after timeout');
+            })
+            .catch(function (initErr) {
+              setStatus('worker_error', (initErr && initErr.message) || 'Restart failed');
+            })
+            .finally(function () {
+              setBusy(false);
+              updateGradeButton();
+            });
+          return;
+        }
+        el.stderr.textContent = (err && err.message) || String(err);
+        setStatus('worker_error', 'Grade failed');
+        setBusy(false);
+        updateGradeButton();
+      });
+  }
+
+  function boot() {
+    return fetch('../assignments/basics/hello-name/assignment.json')
+      .then(function (res) {
+        if (!res.ok) throw new Error('Could not load assignment.json');
+        return res.json();
+      })
+      .then(function (data) {
+        assignment = data;
+        el.title.textContent = assignment.title;
+        el.prompt.innerHTML = assignment.prompt || '';
+        loadStarter();
+
+        runtime = window.PythonGraderRuntime.create({
+          workerUrl: '../worker/pyodide-worker.js',
+          onStatus: function (state, msg) {
+            if (state === 'loading') {
+              setStatus('loading', (msg && msg.message) || 'Loading Python…');
+            } else if (state === 'ready') {
+              setStatus('ready', 'Ready (Pyodide ' + ((msg && msg.pyodide_version) || '') + ')');
+              updateGradeButton();
+            } else if (state === 'timeout') {
+              setStatus('timeout', (msg && msg.message) || 'Timed out');
+            }
+          }
+        });
+
+        el.source.addEventListener('input', onEdit);
+        el.stdin.addEventListener('input', onEdit);
+        el.btnRun.addEventListener('click', doRun);
+        el.btnGrade.addEventListener('click', doGrade);
+        el.btnStarter.addEventListener('click', loadStarter);
+        el.btnSolution.addEventListener('click', loadSolution);
+        el.btnLoop.addEventListener('click', function () {
+          el.source.value = 'while True:\n    pass\n';
+          onEdit();
+        });
+
+        setBusy(true);
+        return runtime.init().then(function () {
+          setBusy(false);
+          updateGradeButton();
+        });
+      });
+  }
+
+  boot().catch(function (err) {
+    setStatus('worker_error', (err && err.message) || String(err));
+    el.stderr.textContent = (err && err.message) || String(err);
+    setBusy(false);
+  });
+})();
+  </script>
+</body>
+</html>
