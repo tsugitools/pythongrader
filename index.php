@@ -118,6 +118,22 @@ window.PYTHONGRADER = {
     }
 };
 </script>
+<?php if ($mode === 'author' && $isInstructor) : ?>
+<script src="https://cdn.ckeditor.com/ckeditor5/16.0.0/classic/ckeditor.js"></script>
+<script>
+ClassicEditor.defaultConfig = {
+    toolbar: {
+        items: [
+            'heading', '|',
+            'bold', 'italic', 'link',
+            'bulletedList', 'numberedList', 'blockQuote',
+            'insertTable', 'mediaEmbed',
+            'undo', 'redo'
+        ]
+    }
+};
+</script>
+<?php endif; ?>
 <script src="js/runtime.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>
 <script src="js/results.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>
 <script src="js/pythongrader.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>

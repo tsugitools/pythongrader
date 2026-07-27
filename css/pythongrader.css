@@ -265,3 +265,20 @@ pre.output {
     border-radius: 6px;
     padding: 0.6rem 0.75rem;
 }
+
+.ckeditor-container {
+    min-height: 16em;
+}
+
+.ckeditor-container .ck-editor__editable {
+    min-height: 12em;
+    background: #fff;
+}
+
+.field-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0.5rem 0 0.25rem;
+}

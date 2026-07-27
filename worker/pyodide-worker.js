@@ -113,13 +113,50 @@ function resetWorkDir() {
     FS.writeFile(WORK_DIR + '/harness.py', harnessSource);
 }
 
-function prepareExecution(studentSource, evaluationSource) {
+function isSafeMount(mount) {
+    if (!mount || typeof mount !== 'string') return false;
+    mount = mount.replace(/\\/g, '/');
+    if (!mount || mount.charAt(0) === '/' || mount.indexOf('..') >= 0) return false;
+    if (mount === 'student.py' || mount === 'evaluation.py'
+        || mount === 'harness.py' || mount === 'result.py') {
+        return false;
+    }
+    return /^[A-Za-z0-9._][A-Za-z0-9._/-]*$/.test(mount);
+}
+
+function writeAssets(assets) {
+    if (!assets || !assets.length) return;
+    var FS = pyodide.FS;
+    for (var i = 0; i < assets.length; i++) {
+        var a = assets[i];
+        if (!a || !isSafeMount(a.mount)) {
+            throw new Error('Invalid asset mount path: ' + (a && a.mount));
+        }
+        var mount = String(a.mount).replace(/\\/g, '/');
+        var full = WORK_DIR + '/' + mount;
+        var slash = full.lastIndexOf('/');
+        if (slash > 0) {
+            FS.mkdirTree(full.slice(0, slash));
+        }
+        if (typeof a.text === 'string') {
+            FS.writeFile(full, a.text);
+        } else if (a.data) {
+            var u8 = a.data instanceof Uint8Array ? a.data : new Uint8Array(a.data);
+            FS.writeFile(full, u8);
+        } else {
+            throw new Error('Asset missing data: ' + mount);
+        }
+    }
+}
+
+function prepareExecution(studentSource, evaluationSource, assets) {
     resetWorkDir();
     var FS = pyodide.FS;
     FS.writeFile(WORK_DIR + '/student.py', studentSource == null ? '' : String(studentSource));
     if (evaluationSource != null) {
         FS.writeFile(WORK_DIR + '/evaluation.py', String(evaluationSource));
     }
+    writeAssets(assets);
     pyodide.runPython(
         [
             'import os, sys, importlib',
@@ -147,7 +184,7 @@ function parsePythonJson(globalName) {
 async function runStudent(payload) {
     var studentSource = (payload && payload.student_source) || '';
     var stdinText = (payload && payload.stdin) != null ? String(payload.stdin) : '';
-    prepareExecution(studentSource, null);
+    prepareExecution(studentSource, null, payload && payload.assets);
 
     var code = [
         'import io, sys, json, time, runpy',
@@ -203,7 +240,7 @@ async function gradeStudent(payload) {
         };
     }
 
-    prepareExecution(studentSource, evaluationSource);
+    prepareExecution(studentSource, evaluationSource, payload && payload.assets);
 
     var code = [
         'import io, sys, json',

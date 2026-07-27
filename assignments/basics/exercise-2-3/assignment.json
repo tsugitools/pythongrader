@@ -1,0 +1,85 @@
+{
+  "type": "pythongrader",
+  "schema_version": 1,
+  "id": "basics-exercise-2-3-001",
+  "assignment_version": 1,
+  "title": "2.3 Gross Pay",
+  "prompt": "<p><b>2.3</b> Write a program to prompt the user for hours and rate per hour using input to compute gross pay. Use 35 hours and a rate of 2.75 per hour to test the program (the pay should be 96.25). Use <b>input</b> to read a string and <b>float()</b> to convert the string to a number.</p>",
+  "files": {
+    "student.py": {
+      "mode": "editable",
+      "starter": "# This first line is provided for you\n\nhrs = input(\"Enter Hours:\")\n",
+      "solution": "hrs = input(\"Enter Hours:\")\nrate = input(\"Enter Rate:\")\npay = float(hrs) * float(rate)\nprint(\"Pay:\", pay)\n"
+    }
+  },
+  "run": {
+    "stdin": "35\n2.75\n",
+    "timeout_ms": 5000
+  },
+  "evaluation": {
+    "filename": "evaluation.py",
+    "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"Pay: 96.25\"\nDESIRED2 = None\nSTDIN = \"35\\n2.75\\n\"\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path('student.py', run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open('student.py', encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_input(self):\n        self.assertIn(\"input\", self.src,\n            \"You must prompt the pay and rate using the input() function.\")\n\n    def test_source_print(self):\n        self.assertIn(\"print\", self.src,\n            \"You must use the print function to print the output.\")\n\n    def test_source_float(self):\n        self.assertIn(\"float\", self.src,\n            \"You should use the built-in float() function to convert from a string to a float.\")\n\n    def test_source_star(self):\n        self.assertIn(\"*\", self.src,\n            \"To multiply the pay and rate after you read them use the '*' operator.\")\n\n    def test_source_not_35(self):\n        self.assertNotIn(\"35\", self.src,\n            \"You should not include the input data in your source code.\")\n\n    def test_source_not_2_75(self):\n        self.assertNotIn(\"2.75\", self.src,\n            \"You should not include the input data in your source code.\")\n\n    def test_source_not_96_25(self):\n        self.assertNotIn(\"96.25\", self.src,\n            \"You must actually calculate the pay.\")\n\n",
+    "tests": {
+      "OutputTests.test_desired_output": {
+        "title": "Matches desired output",
+        "group": "Output",
+        "points": 10,
+        "feedback": "Compare your program output carefully to the Desired Output."
+      },
+      "SourceTests.test_source_input": {
+        "title": "Source check: require 'input'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must prompt the pay and rate using the input() function."
+      },
+      "SourceTests.test_source_print": {
+        "title": "Source check: require 'print'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must use the print function to print the output."
+      },
+      "SourceTests.test_source_float": {
+        "title": "Source check: require 'float'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You should use the built-in float() function to convert from a string to a float."
+      },
+      "SourceTests.test_source_star": {
+        "title": "Source check: require '*'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "To multiply the pay and rate after you read them use the '*' operator."
+      },
+      "SourceTests.test_source_not_35": {
+        "title": "Source check: forbid '35'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You should not include the input data in your source code."
+      },
+      "SourceTests.test_source_not_2_75": {
+        "title": "Source check: forbid '2.75'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You should not include the input data in your source code."
+      },
+      "SourceTests.test_source_not_96_25": {
+        "title": "Source check: forbid '96.25'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must actually calculate the pay."
+      }
+    }
+  },
+  "assets": [],
+  "packages": [],
+  "grading": {
+    "maximum_points": 17,
+    "partial_credit": true
+  },
+  "exports": {
+    "udemy": {
+      "enabled": true
+    }
+  },
+  "py4e_exercise": "2.3"
+}

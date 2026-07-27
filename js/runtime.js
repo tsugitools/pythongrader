@@ -224,23 +224,51 @@
             return init();
         }
 
-        function run(studentSource, stdin, timeoutMs) {
-            return init().then(function () {
-                onStatus('running', { operation: 'run' });
-                return callWorker(
-                    'run',
-                    {
-                        student_source: studentSource,
-                        stdin: stdin == null ? '' : String(stdin)
-                    },
-                    timeoutMs
-                ).then(function (msg) {
+        function fetchAssets(assetDecls) {
+            var decls = Array.isArray(assetDecls) ? assetDecls : [];
+            if (!decls.length) return Promise.resolve([]);
+            return Promise.all(
+                decls.map(function (a) {
+                    if (!a || !a.source || !a.mount) {
+                        return Promise.reject(new Error('Asset declaration missing source/mount'));
+                    }
+                    return fetch(a.source, { credentials: 'same-origin' }).then(function (resp) {
+                        if (!resp.ok) {
+                            throw new Error(
+                                'Missing required asset: ' + a.source + ' (' + resp.status + ')'
+                            );
+                        }
+                        return resp.text().then(function (text) {
+                            return { mount: a.mount, text: text };
+                        });
+                    });
+                })
+            );
+        }
+
+        function run(studentSource, stdin, timeoutMs, assetDecls) {
+            return init()
+                .then(function () {
+                    return fetchAssets(assetDecls);
+                })
+                .then(function (assets) {
+                    onStatus('running', { operation: 'run' });
+                    return callWorker(
+                        'run',
+                        {
+                            student_source: studentSource,
+                            stdin: stdin == null ? '' : String(stdin),
+                            assets: assets
+                        },
+                        timeoutMs
+                    );
+                })
+                .then(function (msg) {
                     // Successful run (even with student exception) clears dirty state.
                     markCleanAfterRun();
                     onStatus('complete', msg);
                     return msg;
                 });
-            });
         }
 
         function scoreTests(tests, metadata, grading) {
@@ -307,22 +335,29 @@
             return { tests: scored, earned: earned, possible: possible };
         }
 
-        function grade(studentSource, evaluationSource, testMetadata, grading, timeoutMs) {
+        function grade(studentSource, evaluationSource, testMetadata, grading, timeoutMs, assetDecls) {
             if (!canGrade()) {
                 return Promise.reject(
                     new Error('Grade is disabled until you Run the current source')
                 );
             }
-            return init().then(function () {
-                onStatus('running', { operation: 'grade' });
-                return callWorker(
-                    'grade',
-                    {
-                        student_source: studentSource,
-                        evaluation_source: evaluationSource
-                    },
-                    timeoutMs
-                ).then(function (msg) {
+            return init()
+                .then(function () {
+                    return fetchAssets(assetDecls);
+                })
+                .then(function (assets) {
+                    onStatus('running', { operation: 'grade' });
+                    return callWorker(
+                        'grade',
+                        {
+                            student_source: studentSource,
+                            evaluation_source: evaluationSource,
+                            assets: assets
+                        },
+                        timeoutMs
+                    );
+                })
+                .then(function (msg) {
                     var scored = scoreTests(msg.tests || [], testMetadata, grading);
                     var result = Object.assign({}, msg, {
                         earned: scored.earned,
@@ -336,7 +371,6 @@
                     }
                     return result;
                 });
-            });
         }
 
         function isReady() {

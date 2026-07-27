@@ -9,9 +9,17 @@ Place this folder under your Tsugi `mod/` directory (e.g. `tsugi/mod/pythongrade
 ## Instructor setup
 
 1. Launch the tool in a placement.
-2. Open **Settings** and choose a built-in assignment (e.g. **Basics: Hello, Name**).
+2. Open **Settings** and choose a built-in assignment (e.g. **PY4E: 2.2 Welcome Name**).
 3. Optionally open **Edit** to customize the placement copy (does not change the catalog file).
 4. Switch to **Learner** to try Run / Grade.
+
+## PY4E catalog
+
+Built-in exercises are ported from `py4e/tools/pythonauto/exercises3.php` (Hello through 11.9), plus the original Hello Name sample. Shared files (`words.txt`, `romeo.txt`, `mbox-short.txt`) live under `assignments/_shared/files/`. Regenerate with:
+
+```bash
+python3 scripts/generate-py4e-assignments.py
+```
 
 ## Learner flow
 

@@ -13,6 +13,7 @@
     var runtime = null;
     var saveTimer = null;
     var busy = false;
+    var promptEditor = null;
 
     function $(sel, root) {
         return (root || document).querySelector(sel);
@@ -229,7 +230,12 @@
         setStatus('running', 'Running…');
         Results.renderGrade($('#score'), $('#results'), null);
         runtime
-            .run($('#student-source').value, $('#stdin').value, timeoutMs())
+            .run(
+                $('#student-source').value,
+                $('#stdin').value,
+                timeoutMs(),
+                exercise.assets || []
+            )
             .then(function (msg) {
                 Results.renderRunOutput($('#stdout'), $('#stderr'), msg);
                 setStatus('complete', 'Run complete (' + (msg.duration_ms || 0) + ' ms)');
@@ -280,7 +286,8 @@
                 evaluationSource(),
                 testMetadata(),
                 exercise.grading || {},
-                timeoutMs()
+                timeoutMs(),
+                exercise.assets || []
             )
             .then(function (msg) {
                 Results.renderRunOutput($('#stdout'), $('#stderr'), msg);
@@ -480,6 +487,57 @@
         });
     }
 
+    function destroyPromptEditor() {
+        if (!promptEditor) return Promise.resolve();
+        var ed = promptEditor;
+        promptEditor = null;
+        return ed.destroy().catch(function () { /* ignore */ });
+    }
+
+    function initPromptEditor() {
+        if (typeof window.ClassicEditor === 'undefined') return;
+        var node = document.querySelector('#author-prompt');
+        if (!node) return;
+        var config = window.ClassicEditor.defaultConfig || {
+            toolbar: {
+                items: [
+                    'heading', '|',
+                    'bold', 'italic', 'link',
+                    'bulletedList', 'numberedList', 'blockQuote',
+                    'insertTable', 'mediaEmbed',
+                    'undo', 'redo'
+                ]
+            }
+        };
+        window.ClassicEditor.create(node, config).then(function (editor) {
+            promptEditor = editor;
+        }).catch(function (err) {
+            console.error('CKEditor init failed', err);
+        });
+    }
+
+    function readPromptField() {
+        if (promptEditor) {
+            try {
+                return promptEditor.getData();
+            } catch (e) { /* fall through */ }
+        }
+        var ta = $('#author-prompt');
+        return ta ? ta.value : '';
+    }
+
+    function setPromptField(html) {
+        var value = html || '';
+        if (promptEditor) {
+            try {
+                promptEditor.setData(value);
+                return;
+            } catch (e) { /* fall through */ }
+        }
+        var ta = $('#author-prompt');
+        if (ta) ta.value = value;
+    }
+
     function collectAuthorExercise() {
         var raw = $('#author-json').value;
         var parsed;
@@ -493,7 +551,7 @@
         }
         parsed.type = 'pythongrader';
         parsed.title = $('#author-title').value || parsed.title || '';
-        parsed.prompt = $('#author-prompt').value || parsed.prompt || '';
+        parsed.prompt = readPromptField() || parsed.prompt || '';
         if (!parsed.files) parsed.files = {};
         if (!parsed.files['student.py']) parsed.files['student.py'] = { mode: 'editable' };
         parsed.files['student.py'].starter = $('#author-starter').value;
@@ -518,7 +576,7 @@
     function loadAuthorFieldsFromExercise(ex) {
         exercise = ex;
         $('#author-title').value = ex.title || '';
-        $('#author-prompt').value = ex.prompt || '';
+        setPromptField(ex.prompt || '');
         var f = (ex.files && ex.files['student.py']) || {};
         $('#author-starter').value = f.starter || '';
         $('#author-solution').value = f.solution || '';
@@ -564,7 +622,26 @@
     }
 
     function renderAuthor() {
+        destroyPromptEditor().then(function () {
+            renderAuthorBody();
+        });
+    }
+
+    function renderAuthorBody() {
         app.innerHTML = '';
+
+        var promptField = el('div', { className: 'author-prompt-field' }, [
+            el('div', { className: 'field-label', text: 'Prompt / instructions' }),
+            el('div', { className: 'ckeditor-container' }, [
+                el('textarea', {
+                    id: 'author-prompt',
+                    name: 'instructions',
+                    rows: '8',
+                    'aria-label': 'Assignment prompt'
+                })
+            ])
+        ]);
+
         app.appendChild(el('section', { className: 'panel' }, [
             el('h2', { text: 'Edit assignment' }),
             el('p', {
@@ -574,8 +651,7 @@
             el('div', { className: 'author-meta' }, [
                 el('label', { for: 'author-title', text: 'Title' }),
                 el('input', { type: 'text', id: 'author-title' }),
-                el('label', { for: 'author-prompt', text: 'Prompt (HTML)' }),
-                el('textarea', { id: 'author-prompt', rows: '4' }),
+                promptField,
                 el('label', { for: 'author-starter', text: 'Starter (student.py)' }),
                 el('textarea', { id: 'author-starter', className: 'code', rows: '8' }),
                 el('label', { for: 'author-solution', text: 'Solution (student.py)' }),
@@ -598,6 +674,8 @@
         ]));
 
         loadAuthorFieldsFromExercise(exercise);
+        initPromptEditor();
+
         $('#btnSave').addEventListener('click', saveAuthorExercise);
         $('#btnSyncJson').addEventListener('click', function () {
             try {

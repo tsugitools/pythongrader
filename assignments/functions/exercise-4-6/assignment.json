@@ -1,0 +1,109 @@
+{
+  "type": "pythongrader",
+  "schema_version": 1,
+  "id": "functions-exercise-4-6-001",
+  "assignment_version": 1,
+  "title": "4.6 computepay()",
+  "prompt": "<p><b>4.6</b> Write a program to prompt the user for hours and rate per hour using input to compute gross pay. Put the logic in a function called <b>computepay()</b> and use the function to do the computation. Use 45 hours and a rate of 10.50 per hour (pay should be 498.75).</p>",
+  "files": {
+    "student.py": {
+      "mode": "editable",
+      "starter": "def computepay(h, r):\n    return 42.37\n\nhrs = input(\"Enter Hours:\")\np = computepay(10, 20)\nprint(\"Pay\", p)\n",
+      "solution": "def computepay(h, r):\n    if h <= 40:\n        return h * r\n    return 40 * r + (h - 40) * r * 1.5\n\nhrs = input(\"Enter Hours:\")\nrate = input(\"Enter Rate:\")\nh = float(hrs)\nr = float(rate)\np = computepay(h, r)\nprint(\"Pay\", p)\n"
+    }
+  },
+  "run": {
+    "stdin": "45\n10.50\n",
+    "timeout_ms": 5000
+  },
+  "evaluation": {
+    "filename": "evaluation.py",
+    "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"Pay 498.75\"\nDESIRED2 = None\nSTDIN = \"45\\n10.50\\n\"\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path('student.py', run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open('student.py', encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_input(self):\n        self.assertIn(\"input\", self.src,\n            \"You must prompt the hours and rate using the input() function.\")\n\n    def test_source_print(self):\n        self.assertIn(\"print\", self.src,\n            \"You must use the print function to print the output.\")\n\n    def test_source_not_45(self):\n        self.assertNotIn(\"45\", self.src,\n            \"You must prompt for the data.\")\n\n    def test_source_not_10_5(self):\n        self.assertNotIn(\"10.5\", self.src,\n            \"You must prompt for the data.\")\n\n    def test_source_if(self):\n        self.assertIn(\"if\", self.src,\n            \"You should use an if statement to decide the overtime computation or not.\")\n\n    def test_source_float(self):\n        self.assertIn(\"float\", self.src,\n            \"You should use the built-in float() function to convert from a string to a float.\")\n\n    def test_source_def(self):\n        self.assertIn(\"def\", self.src,\n            \"You must use a function called computepay to do the computation.\")\n\n    def test_source_not_sum(self):\n        self.assertNotIn(\"sum(\", self.src,\n            \"Do not use a variable named sum or a function named sum()\")\n\n    def test_source_return(self):\n        self.assertIn(\"return\", self.src,\n            \"You must use a return statement to pass the computed pay back to the main code.\")\n\n    def test_source_computepay(self):\n        self.assertIn(\"computepay\", self.src,\n            \"You must use a function called computepay to do the computation.\")\n\n    def test_source_not_475(self):\n        self.assertNotIn(\"475\", self.src,\n            \"You must actually calculate the pay.\")\n\n",
+    "tests": {
+      "OutputTests.test_desired_output": {
+        "title": "Matches desired output",
+        "group": "Output",
+        "points": 10,
+        "feedback": "Compare your program output carefully to the Desired Output."
+      },
+      "SourceTests.test_source_input": {
+        "title": "Source check: require 'input'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must prompt the hours and rate using the input() function."
+      },
+      "SourceTests.test_source_print": {
+        "title": "Source check: require 'print'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must use the print function to print the output."
+      },
+      "SourceTests.test_source_not_45": {
+        "title": "Source check: forbid '45'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must prompt for the data."
+      },
+      "SourceTests.test_source_not_10_5": {
+        "title": "Source check: forbid '10.5'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must prompt for the data."
+      },
+      "SourceTests.test_source_if": {
+        "title": "Source check: require 'if'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You should use an if statement to decide the overtime computation or not."
+      },
+      "SourceTests.test_source_float": {
+        "title": "Source check: require 'float'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You should use the built-in float() function to convert from a string to a float."
+      },
+      "SourceTests.test_source_def": {
+        "title": "Source check: require 'def'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must use a function called computepay to do the computation."
+      },
+      "SourceTests.test_source_not_sum": {
+        "title": "Source check: forbid 'sum('",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "Do not use a variable named sum or a function named sum()"
+      },
+      "SourceTests.test_source_return": {
+        "title": "Source check: require 'return'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must use a return statement to pass the computed pay back to the main code."
+      },
+      "SourceTests.test_source_computepay": {
+        "title": "Source check: require 'computepay'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must use a function called computepay to do the computation."
+      },
+      "SourceTests.test_source_not_475": {
+        "title": "Source check: forbid '475'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must actually calculate the pay."
+      }
+    }
+  },
+  "assets": [],
+  "packages": [],
+  "grading": {
+    "maximum_points": 21,
+    "partial_credit": true
+  },
+  "exports": {
+    "udemy": {
+      "enabled": true
+    }
+  },
+  "py4e_exercise": "4.6"
+}

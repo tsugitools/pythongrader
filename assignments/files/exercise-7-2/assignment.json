@@ -1,0 +1,85 @@
+{
+  "type": "pythongrader",
+  "schema_version": 1,
+  "id": "files-exercise-7-2-001",
+  "assignment_version": 1,
+  "title": "7.2 Spam Confidence",
+  "prompt": "<p><b>7.2</b> Write a program that prompts for a file name, then opens that file and reads through the file, looking for lines of the form X-DSPAM-Confidence: 0.8475. Count these lines and compute the average. Do not use the sum() function. Enter <b>mbox-short.txt</b> as the file name.</p>",
+  "files": {
+    "student.py": {
+      "mode": "editable",
+      "starter": "# Use the file name mbox-short.txt as the file name\nfname = input(\"Enter file name: \")\nfh = open(fname)\nfor line in fh:\n    if not line.startswith(\"X-DSPAM-Confidence:\"):\n        continue\n    print(line)\nprint(\"Done\")\n",
+      "solution": "# Use the file name mbox-short.txt as the file name\nfname = input(\"Enter file name: \")\nfh = open(fname)\ntot = 0.0\ncount = 0\nfor line in fh:\n    if not line.startswith(\"X-DSPAM-Confidence:\") : continue\n    words = line.split()\n    tot = tot + float(words[1])\n    count = count + 1\nprint(\"Average spam confidence:\", tot/count)\n"
+    }
+  },
+  "run": {
+    "stdin": "mbox-short.txt\n",
+    "timeout_ms": 10000
+  },
+  "evaluation": {
+    "filename": "evaluation.py",
+    "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"Average spam confidence: 0.7507185185185187\"\nDESIRED2 = None\nSTDIN = \"mbox-short.txt\\n\"\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path('student.py', run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open('student.py', encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_input(self):\n        self.assertIn(\"input\", self.src,\n            \"You must prompt for the file name using the input() function.\")\n\n    def test_source_open(self):\n        self.assertIn(\"open\", self.src,\n            \"You need to use open() to open the file.\")\n\n    def test_source_not_sum(self):\n        self.assertNotIn(\"sum\", self.src,\n            \"You should not use the sum() function and avoid using sum as a variable.\")\n\n    def test_source_float(self):\n        self.assertIn(\"float\", self.src,\n            \"You should use the float() function to convert from a string to a float.\")\n\n    def test_source_not_18518(self):\n        self.assertNotIn(\"18518\", self.src,\n            \"You must actually pull the data from the strings and convert it.\")\n\n    def test_source_slash(self):\n        self.assertIn(\"/\", self.src,\n            \"Average is usually a total / count.\")\n\n",
+    "tests": {
+      "OutputTests.test_desired_output": {
+        "title": "Matches desired output",
+        "group": "Output",
+        "points": 10,
+        "feedback": "Compare your program output carefully to the Desired Output."
+      },
+      "SourceTests.test_source_input": {
+        "title": "Source check: require 'input'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must prompt for the file name using the input() function."
+      },
+      "SourceTests.test_source_open": {
+        "title": "Source check: require 'open'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You need to use open() to open the file."
+      },
+      "SourceTests.test_source_not_sum": {
+        "title": "Source check: forbid 'sum'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You should not use the sum() function and avoid using sum as a variable."
+      },
+      "SourceTests.test_source_float": {
+        "title": "Source check: require 'float'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You should use the float() function to convert from a string to a float."
+      },
+      "SourceTests.test_source_not_18518": {
+        "title": "Source check: forbid '18518'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You must actually pull the data from the strings and convert it."
+      },
+      "SourceTests.test_source_slash": {
+        "title": "Source check: require '/'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "Average is usually a total / count."
+      }
+    }
+  },
+  "assets": [
+    {
+      "source": "assignments/_shared/files/mbox-short.txt",
+      "mount": "mbox-short.txt",
+      "required": true
+    }
+  ],
+  "packages": [],
+  "grading": {
+    "maximum_points": 16,
+    "partial_credit": true
+  },
+  "exports": {
+    "udemy": {
+      "enabled": true
+    }
+  },
+  "py4e_exercise": "7.2"
+}
