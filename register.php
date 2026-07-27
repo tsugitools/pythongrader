@@ -17,7 +17,12 @@ $REGISTER_LTI2 = array(
     "source_url" => "https://github.com/tsugitools/pythongrader",
     "placements" => array(
     ),
+    // mstore install shows a dropdown; selected value becomes LTI custom.
+    // add_to_get also puts exercise=... on the launch URL (LMS custom fallback).
     "custom" => array(
-        "exercise" => pythongrader_assignment_catalog(),
+        "exercise" => array(
+            "add_to_get" => true,
+            "options" => pythongrader_assignment_catalog(),
+        ),
     ),
 );
