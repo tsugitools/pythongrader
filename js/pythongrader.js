@@ -902,6 +902,83 @@
         return collectAuthorExercise();
     }
 
+    function copyTextToClipboard(text, btn) {
+        var done = function (ok) {
+            if (!btn) return;
+            var prev = btn.textContent;
+            btn.textContent = ok ? 'Copied' : 'Copy failed';
+            setTimeout(function () {
+                btn.textContent = prev;
+            }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+                done(true);
+            }).catch(function () {
+                done(false);
+            });
+            return;
+        }
+        // Fallback for older browsers
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = false;
+        try {
+            ok = document.execCommand('copy');
+        } catch (e) {
+            ok = false;
+        }
+        ta.remove();
+        done(ok);
+    }
+
+    function renderUdemyPasteFields(host, members) {
+        var Export = window.PythonGraderUdemyExport;
+        var fields = (Export && Export.PASTE_FIELDS) || [];
+        var wrap = el('div', { className: 'udemy-paste', id: 'udemy-paste' });
+        wrap.appendChild(el('h4', { text: 'Copy into Udemy' }));
+        wrap.appendChild(el('p', {
+            className: 'udemy-paste-help',
+            text: 'Paste each field into the matching Udemy coding-exercise box. No ZIP extraction needed.'
+        }));
+
+        fields.forEach(function (field) {
+            if (!members || typeof members[field.file] !== 'string') return;
+            var text = members[field.file];
+            var section = el('section', { className: 'udemy-paste-field' });
+            var head = el('div', { className: 'udemy-paste-head' });
+            head.appendChild(el('h5', { text: field.label + ' (' + field.file + ')' }));
+            var btnCopy = el('button', {
+                type: 'button',
+                className: 'btn btn-primary',
+                text: 'Copy'
+            });
+            btnCopy.addEventListener('click', function () {
+                copyTextToClipboard(text, btnCopy);
+            });
+            head.appendChild(btnCopy);
+            section.appendChild(head);
+            section.appendChild(el('textarea', {
+                className: 'code udemy-paste-text',
+                rows: String(Math.min(16, Math.max(4, text.split('\n').length + 1))),
+                readonly: 'readonly',
+                spellcheck: 'false',
+                'aria-label': field.label
+            }));
+            wrap.appendChild(section);
+            // Set value after append (el() uses attributes, not .value for content)
+            var ta = section.querySelector('textarea');
+            if (ta) ta.value = text;
+        });
+
+        host.appendChild(wrap);
+    }
+
     function renderUdemyPanel(preview) {
         var host = $('#udemy-panel');
         if (!host) return;
@@ -911,19 +988,30 @@
             text: preview.ok ? 'Udemy export — compatible' : 'Udemy export — not exportable'
         }));
         host.appendChild(el('pre', { text: preview.markdown || '' }));
+
         var actions = el('div', { className: 'udemy-actions' });
-        var btnDl = el('button', {
+        var btnPaste = el('button', {
             type: 'button',
             className: 'btn btn-primary',
+            id: 'btnUdemyPaste',
+            text: 'Show copy/paste fields'
+        });
+        var btnDl = el('button', {
+            type: 'button',
+            className: 'btn',
             id: 'btnUdemyDownload',
             text: 'Download ZIP'
         });
-        if (!preview.ok) btnDl.disabled = true;
+        if (!preview.ok) {
+            btnPaste.disabled = true;
+            btnDl.disabled = true;
+        }
         var btnClose = el('button', {
             type: 'button',
             className: 'btn',
             text: 'Close'
         });
+        actions.appendChild(btnPaste);
         actions.appendChild(btnDl);
         actions.appendChild(btnClose);
         host.appendChild(actions);
@@ -935,6 +1023,29 @@
         btnDl.addEventListener('click', function () {
             authorDownloadUdemyZip();
         });
+        btnPaste.addEventListener('click', function () {
+            var existing = $('#udemy-paste');
+            if (existing) {
+                existing.hidden = !existing.hidden;
+                btnPaste.textContent = existing.hidden
+                    ? 'Show copy/paste fields'
+                    : 'Hide copy/paste fields';
+                return;
+            }
+            if (!preview.members) {
+                setStatus('error', 'No paste fields available');
+                return;
+            }
+            renderUdemyPasteFields(host, preview.members);
+            btnPaste.textContent = 'Hide copy/paste fields';
+            setStatus('success', 'Copy each field into Udemy');
+        });
+
+        // Compatible exports: open paste fields by default (ZIP still available).
+        if (preview.ok && preview.members) {
+            renderUdemyPasteFields(host, preview.members);
+            btnPaste.textContent = 'Hide copy/paste fields';
+        }
     }
 
     function authorExportUdemyPreview() {
@@ -954,7 +1065,7 @@
         var preview = Export.preview(next);
         renderUdemyPanel(preview);
         if (preview.ok) {
-            setStatus('success', 'Compatible — review the report, then Download ZIP');
+            setStatus('success', 'Compatible — copy fields into Udemy, or download ZIP');
         } else {
             setStatus('error', 'Not exportable — see Udemy export panel');
         }
@@ -983,7 +1094,8 @@
             renderUdemyPanel({
                 ok: result.ok,
                 markdown: result.markdown,
-                report: result.report
+                report: result.report,
+                members: result.members || null
             });
             if (result.ok) {
                 setStatus('success', 'Downloaded ' + result.filename);

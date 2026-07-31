@@ -432,3 +432,44 @@ pre.output {
     gap: 0.5rem;
     margin-top: 0.75rem;
 }
+
+.udemy-paste {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
+.udemy-paste h4 {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+}
+
+.udemy-paste-help {
+    margin: 0 0 0.85rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.udemy-paste-field {
+    margin-bottom: 0.85rem;
+}
+
+.udemy-paste-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.udemy-paste-head h5 {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+textarea.udemy-paste-text {
+    min-height: 5rem;
+    max-height: 22rem;
+    overflow: auto;
+    background: #fff;
+}

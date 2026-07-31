@@ -316,13 +316,25 @@
 
     function preview(exercise) {
         var report = analyze(exercise);
+        var members = report.ok ? buildMembers(exercise, report) : null;
         return {
             ok: report.ok,
             report: report,
             markdown: buildCompatibilityMarkdown(report),
-            members: report.ok ? Object.keys(buildMembers(exercise, report)) : []
+            members: members,
+            memberNames: members ? Object.keys(members) : []
         };
     }
+
+    /** Fields instructors typically paste into the Udemy coding-exercise UI. */
+    var PASTE_FIELDS = [
+        { file: 'instructions.md', label: 'Instructions' },
+        { file: 'starter.py', label: 'Starter code' },
+        { file: 'solution.py', label: 'Solution' },
+        { file: 'evaluation.py', label: 'Evaluation (unittest)' },
+        { file: 'solution-explanation.md', label: 'Solution explanation' },
+        { file: 'hints.md', label: 'Hints / feedback' }
+    ];
 
     global.PythonGraderUdemyExport = {
         analyze: analyze,
@@ -331,6 +343,7 @@
         buildMembers: buildMembers,
         buildCompatibilityMarkdown: buildCompatibilityMarkdown,
         htmlToMarkdown: htmlToMarkdown,
-        slugify: slugify
+        slugify: slugify,
+        PASTE_FIELDS: PASTE_FIELDS
     };
 })(typeof window !== 'undefined' ? window : self);
