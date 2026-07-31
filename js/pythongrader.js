@@ -142,6 +142,13 @@
             ? exercise.run.stdin : '';
     }
 
+    /** Show stdin only when the assignment provides default input or uses input(). */
+    function needsStdin() {
+        if ((defaultStdin() || '').length > 0) return true;
+        return /\binput\s*\(/.test(starterSource())
+            || /\binput\s*\(/.test(solutionSource());
+    }
+
     function timeoutMs() {
         var t = exercise.run && exercise.run.timeout_ms;
         return typeof t === 'number' ? t : 5000;
@@ -280,24 +287,31 @@
 
     function loadInitialSource() {
         var source = starterSource();
-        var stdin = defaultStdin();
+        var fallbackStdin = defaultStdin();
+        var stdin = fallbackStdin;
+        var fromServer = false;
         var sub = cfg.submission;
         if (sub && sub.files && typeof sub.files['student.py'] === 'string') {
             source = sub.files['student.py'];
             if (typeof sub.stdin === 'string') stdin = sub.stdin;
-            return { source: source, stdin: stdin, fromServer: true };
-        }
-        try {
-            var raw = localStorage.getItem(localBackupKey());
-            if (raw) {
-                var parsed = JSON.parse(raw);
-                if (parsed && parsed.files && typeof parsed.files['student.py'] === 'string') {
-                    source = parsed.files['student.py'];
-                    if (typeof parsed.stdin === 'string') stdin = parsed.stdin;
+            fromServer = true;
+        } else {
+            try {
+                var raw = localStorage.getItem(localBackupKey());
+                if (raw) {
+                    var parsed = JSON.parse(raw);
+                    if (parsed && parsed.files && typeof parsed.files['student.py'] === 'string') {
+                        source = parsed.files['student.py'];
+                        if (typeof parsed.stdin === 'string') stdin = parsed.stdin;
+                    }
                 }
-            }
-        } catch (e) { /* ignore */ }
-        return { source: source, stdin: stdin, fromServer: false };
+            } catch (e) { /* ignore */ }
+        }
+        // Empty saved stdin should not hide the assignment's default (e.g. Sarah).
+        if (!(stdin || '').length && (fallbackStdin || '').length) {
+            stdin = fallbackStdin;
+        }
+        return { source: source, stdin: stdin, fromServer: fromServer };
     }
 
     function saveStudentSource(done) {
@@ -429,7 +443,7 @@
         runtime
             .run(
                 getStudentSource(),
-                $('#stdin').value,
+                ($('#stdin') && $('#stdin').value) || '',
                 timeoutMs(),
                 exercise.assets || []
             )
@@ -501,7 +515,15 @@
                 exercise.assets || []
             )
             .then(function (msg) {
-                Results.renderRunOutput($('#stdout'), $('#stderr'), msg);
+                // Keep the last Run stdout/stderr — grade harness output is mocked
+                // and would blank the learner's exploratory run output.
+                if (msg.status === 'grader_error') {
+                    var priorOut = ($('#stdout') && $('#stdout').textContent) || '';
+                    Results.renderRunOutput($('#stdout'), $('#stderr'), {
+                        stdout: priorOut,
+                        stderr: msg.message || 'Grader error'
+                    });
+                }
                 Results.renderGrade($('#score'), $('#results'), msg);
                 var gradeSpeech = getGradeSummary(msg);
 
@@ -592,8 +614,11 @@
             return;
         }
         setStudentSource(starterSource());
-        $('#stdin').value = defaultStdin();
-        autosizeTextarea($('#stdin'));
+        var stdinReset = $('#stdin');
+        if (stdinReset) {
+            stdinReset.value = defaultStdin();
+            autosizeTextarea(stdinReset);
+        }
         if (runtime) {
             runtime.resetRevisions();
             runtime.bumpSourceRevision();
@@ -668,17 +693,20 @@
             ])
         ]);
 
+        var showStdin = needsStdin();
         var right = el('div', { className: 'learner-right' }, [
-            el('section', { className: 'panel panel-stdin' }, [
-                el('label', { for: 'stdin', id: 'stdin-label', text: 'Standard Input (stdin)' }),
-                el('textarea', {
-                    id: 'stdin',
-                    className: 'code stdin-autosize',
-                    rows: '1',
-                    spellcheck: 'false',
-                    'aria-labelledby': 'stdin-label'
-                })
-            ]),
+            showStdin
+                ? el('section', { className: 'panel panel-stdin' }, [
+                    el('label', { for: 'stdin', id: 'stdin-label', text: 'Standard Input (stdin)' }),
+                    el('textarea', {
+                        id: 'stdin',
+                        className: 'code stdin-autosize',
+                        rows: '1',
+                        spellcheck: 'false',
+                        'aria-labelledby': 'stdin-label'
+                    })
+                ])
+                : null,
             el('section', {
                 className: 'panel',
                 role: 'region',
@@ -718,13 +746,16 @@
 
         setStudentSource(initial.source);
         initStudentEditor();
-        $('#stdin').value = initial.stdin;
-        autosizeTextarea($('#stdin'));
+        var stdinEl = $('#stdin');
+        if (stdinEl) {
+            stdinEl.value = initial.stdin;
+            autosizeTextarea(stdinEl);
+            stdinEl.addEventListener('input', function () {
+                autosizeTextarea(stdinEl);
+                onEdit();
+            });
+        }
         $('#student-source').addEventListener('input', onEdit);
-        $('#stdin').addEventListener('input', function () {
-            autosizeTextarea($('#stdin'));
-            onEdit();
-        });
         $('#btnRun').addEventListener('click', doRun);
         $('#btnGrade').addEventListener('click', doGrade);
         $('#btnReset').addEventListener('click', doReset);
