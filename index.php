@@ -61,6 +61,11 @@ $authorUrl = addSession('index.php?mode=author');
 $assetBust = pythongrader_asset_bust();
 $persistKey = 'pythongrader-' . ($hasLink ? (string) $LINK->id : 'anon');
 $workerUrl = 'worker/pyodide-worker.js?v=' . $assetBust;
+$parsonsUid = ($USER && !empty($USER->id)) ? (string) $USER->id : session_id();
+$parsonsKey = $assignmentKey
+    ? (string) $assignmentKey
+    : (isset($exercise['id']) ? (string) $exercise['id'] : 'anon');
+$parsonsSeed = (int) sprintf('%u', crc32($parsonsKey . ':' . $parsonsUid));
 
 $jsonFlags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP;
 
@@ -102,6 +107,29 @@ if ($isInstructor) {
 
 <main id="app"></main>
 
+<?php if ($mode !== 'author') : ?>
+<div class="modal fade" id="parsons-hint" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="parsons-hint-title">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h2 class="modal-title" id="parsons-hint-title">Code Fragments</h2>
+      </div>
+      <div class="modal-body">
+        <p>These code fragments are <b>out of order</b>.
+        <b>Drag and drop</b> them into the correct sequence, then write your own solution in the editor.</p>
+        <div id="parsons-blocks"></div>
+        <p class="text-muted" style="margin-top: 12px; font-size: 12px;">
+        Drag to rearrange. Copying from this window is disabled.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
 <script>
 window.PYTHONGRADER = {
     mode: <?php echo json_encode($mode); ?>,
@@ -112,6 +140,7 @@ window.PYTHONGRADER = {
     assignments: <?php echo json_encode($assignments); ?>,
     exercise: <?php echo json_encode($exercise, $jsonFlags); ?>,
     submission: <?php echo json_encode($submission, $jsonFlags); ?>,
+    parsonsSeed: <?php echo (int) $parsonsSeed; ?>,
     urls: {
         save: <?php echo json_encode($saveUrl); ?>,
         studentSave: <?php echo json_encode($studentSaveUrl); ?>,
@@ -146,6 +175,8 @@ ClassicEditor.defaultConfig = {
 <script src="js/vendor/ace/ace.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>
 <script src="js/vendor/ace/mode-python.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>
 <script src="js/vendor/ace/theme-chrome.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>
+<script src="js/parsons-blocks.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>
+<script src="js/parsons-hint.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>
 <?php endif; ?>
 <script src="js/runtime.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>
 <script src="js/results.js?v=<?php echo htmlspecialchars($assetBust); ?>"></script>

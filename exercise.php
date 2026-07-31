@@ -28,6 +28,8 @@ function pythongrader_asset_bust() {
         __DIR__ . '/js/runtime.js',
         __DIR__ . '/js/results.js',
         __DIR__ . '/js/udemy-export.js',
+        __DIR__ . '/js/parsons-blocks.js',
+        __DIR__ . '/js/parsons-hint.js',
         __DIR__ . '/js/vendor/fflate.min.js',
         __DIR__ . '/js/vendor/ace/ace.js',
         __DIR__ . '/js/vendor/ace/mode-python.js',

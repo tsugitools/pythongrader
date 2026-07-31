@@ -673,6 +673,15 @@
                 cfg.isInstructor
                     ? el('button', { type: 'button', className: 'btn', id: 'btnSolution', text: 'Load solution' })
                     : null,
+                solutionSource().trim()
+                    ? el('button', {
+                        type: 'button',
+                        className: 'btn btn-sparkle',
+                        id: 'btnParsons',
+                        title: 'Study code fragments',
+                        'aria-label': 'Study code fragments'
+                    })
+                    : null,
                 // Visual status only — SR announcements go through #a11y-status
                 el('span', {
                     id: 'status',
@@ -761,6 +770,19 @@
         $('#btnReset').addEventListener('click', doReset);
         var solBtn = $('#btnSolution');
         if (solBtn) solBtn.addEventListener('click', doLoadSolution);
+        var parsonsBtn = $('#btnParsons');
+        if (parsonsBtn) {
+            var sparkle = document.createElement('img');
+            sparkle.src = 'static/sparkle.png';
+            sparkle.alt = '';
+            sparkle.setAttribute('aria-hidden', 'true');
+            parsonsBtn.appendChild(sparkle);
+            parsonsBtn.addEventListener('click', function () {
+                if (typeof window.showParsonsHint === 'function') {
+                    window.showParsonsHint();
+                }
+            });
+        }
         window.addEventListener('resize', function () {
             if (studentEditor) studentEditor.resize();
         });
