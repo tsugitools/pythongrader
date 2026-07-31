@@ -2,28 +2,28 @@
   "type": "pythongrader",
   "schema_version": 1,
   "id": "regex-exercise-11-9-001",
-  "assignment_version": 1,
+  "assignment_version": 2,
   "title": "11.9 Regex Line Count",
-  "prompt": "<p><b>11.9</b> Write a program to prompt the user for a regular expression and read through <b>mbox-short.txt</b>, counting the number of lines that match the expression using <b>re.search()</b>. For example, if the pattern entered is <code>^From </code>, the output should be: <code>mbox-short.txt had 27 lines that matched ^From </code>.</p>",
+  "prompt": "<p><b>11.9</b> Write a program that reads through <b>mbox-short.txt</b> and counts how many lines match the regular expression <code>^From </code> using <b>re.search()</b>. Hard-code that pattern in your program (do not prompt for it). When you run the program, the output should be: <code>mbox-short.txt had 27 lines that matched ^From </code>.</p>",
   "files": {
     "student.py": {
       "mode": "editable",
-      "starter": "import re\n\nstring = input(\"Enter a regular expression:\")\nif len(name) < 1 : name = \"mbox-short.txt\"\nhandle = open(\"mbox-short.txt\")\ncount = 0\nfor line in handle:\n    if re.search(string) : count = count + 1\nprint(\"mbox-short.txt had \", count, \"lines that matched\", string)\n",
-      "solution": "import re\n\nstring = input(\"Enter a regular expression:\")\nif len(string) < 1:\n    string = \"^From \"\nhandle = open(\"mbox-short.txt\")\ncount = 0\nfor line in handle:\n    line = line.rstrip()\n    if re.search(string, line):\n        count = count + 1\nprint(\"mbox-short.txt had\", count, \"lines that matched\", string)\n"
+      "starter": "import re\n\nstring = \"^From \"\nhandle = open(\"mbox-short.txt\")\ncount = 0\nfor line in handle:\n    if re.search(string) : count = count + 1\nprint(\"mbox-short.txt had \", count, \"lines that matched\", string)\n",
+      "solution": "import re\n\nstring = \"^From \"\nhandle = open(\"mbox-short.txt\")\ncount = 0\nfor line in handle:\n    line = line.rstrip()\n    if re.search(string, line):\n        count = count + 1\nprint(\"mbox-short.txt had\", count, \"lines that matched\", string)\n"
     }
   },
   "run": {
-    "stdin": "^From \n",
+    "stdin": "",
     "timeout_ms": 10000
   },
   "evaluation": {
     "filename": "evaluation.py",
-    "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"mbox-short.txt had 27 lines that matched ^From \"\nDESIRED2 = None\nSTDIN = \"^From \\n\"\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path('student.py', run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open('student.py', encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_for(self):\n        self.assertIn(\"for\", self.src,\n            \"You need a for loop to read the lines in the file.\")\n\n    def test_source_re_search(self):\n        self.assertIn(\"re.search\", self.src,\n            \"You need to use re.search() to match the regular expression.\")\n\n    def test_source_import_re(self):\n        self.assertIn(\"import re\", self.src,\n            \"You need to import the re module.\")\n\n",
+    "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"mbox-short.txt had 27 lines that matched ^From \"\nDESIRED2 = None\nSTDIN = \"\"\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path('student.py', run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open('student.py', encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_for(self):\n        self.assertIn(\"for\", self.src,\n            \"You need a for loop to read the lines in the file.\")\n\n    def test_source_re_search(self):\n        self.assertIn(\"re.search\", self.src,\n            \"You need to use re.search() to match the regular expression.\")\n\n    def test_source_import_re(self):\n        self.assertIn(\"import re\", self.src,\n            \"You need to import the re module.\")\n\n    def test_source_From(self):\n        self.assertIn(\"^From \", self.src,\n            \"Hard-code the regular expression ^From  in your program.\")\n\n",
     "tests": {
       "OutputTests.test_desired_output": {
         "title": "Matches expected output",
         "group": "Output",
-        "points": 7,
+        "points": 6,
         "feedback": "Compare your program output carefully to the example in the assignment description."
       },
       "SourceTests.test_source_for": {
@@ -43,6 +43,12 @@
         "group": "Source requirements",
         "points": 1,
         "feedback": "You need to import the re module."
+      },
+      "SourceTests.test_source_From": {
+        "title": "Source check: require '^From '",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "Hard-code the regular expression ^From  in your program."
       }
     }
   },

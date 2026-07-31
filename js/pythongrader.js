@@ -745,7 +745,7 @@
                 role: 'region',
                 'aria-labelledby': 'results-heading'
             }, [
-                el('h2', { id: 'results-heading', text: 'Test results' }),
+                el('h2', { id: 'results-heading', text: 'Grading run results' }),
                 el('div', { id: 'score', className: 'score', 'aria-live': 'off' }),
                 el('div', { id: 'results', tabindex: '0' })
             ])
