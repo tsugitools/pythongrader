@@ -26,7 +26,7 @@ Desktop.ini
 # PHP / tooling (if added later)
 .phpunit.result.cache
 .phpunit.cache/
-vendor/
+/vendor/
 composer.lock
 
 # Local / generated

@@ -14,6 +14,8 @@
     var saveTimer = null;
     var busy = false;
     var promptEditor = null;
+    var studentEditor = null;
+    var ignoreAceChange = false;
 
     function $(sel, root) {
         return (root || document).querySelector(sel);
@@ -73,12 +75,106 @@
         return (cfg.urls && cfg.urls.persistKey) || 'pythongrader-anon';
     }
 
+    function getStudentSource() {
+        if (studentEditor) return studentEditor.getValue();
+        var ta = $('#student-source');
+        return (ta && ta.value) || '';
+    }
+
+    function setStudentSource(code) {
+        var text = code || '';
+        var ta = $('#student-source');
+        if (ta) ta.value = text;
+        if (studentEditor) {
+            ignoreAceChange = true;
+            studentEditor.setValue(text, -1);
+            studentEditor.clearSelection();
+            studentEditor.gotoLine(1, 0, false);
+            ignoreAceChange = false;
+        }
+    }
+
+    function syncAceToTextarea() {
+        var ta = $('#student-source');
+        if (studentEditor && ta) ta.value = studentEditor.getValue();
+    }
+
+    function destroyStudentEditor() {
+        if (!studentEditor) return;
+        syncAceToTextarea();
+        studentEditor.destroy();
+        studentEditor = null;
+        var host = $('#student-ace-host');
+        if (host) host.remove();
+        var ta = $('#student-source');
+        if (ta) {
+            ta.classList.remove('ace-backed');
+            ta.removeAttribute('aria-hidden');
+            ta.removeAttribute('tabindex');
+        }
+    }
+
+    function initStudentEditor() {
+        destroyStudentEditor();
+        var ta = $('#student-source');
+        var wrap = $('#student-editor-wrap');
+        if (!ta || !wrap || typeof ace === 'undefined') return;
+        if (window.matchMedia && window.matchMedia('(max-width: 480px)').matches) {
+            return; // plain textarea on small screens (same as pythonauto)
+        }
+
+        var host = document.createElement('div');
+        host.id = 'student-ace-host';
+        host.setAttribute('role', 'presentation');
+        wrap.insertBefore(host, ta);
+
+        ta.classList.add('ace-backed');
+        ta.setAttribute('aria-hidden', 'true');
+        ta.setAttribute('tabindex', '-1');
+
+        ace.config.set('basePath', 'js/vendor/ace');
+        var editor = ace.edit(host);
+        editor.setTheme('ace/theme/chrome');
+        editor.session.setMode('ace/mode/python');
+        editor.setShowPrintMargin(false);
+        editor.session.setTabSize(4);
+        editor.session.setUseSoftTabs(true);
+        editor.session.setUseWorker(false);
+        editor.setOptions({
+            fontSize: '16px',
+            fontFamily: 'Courier, monospace',
+            showLineNumbers: true,
+            highlightActiveLine: true,
+            behavioursEnabled: true,
+            wrap: false
+        });
+        editor.setValue(ta.value || '', -1);
+        editor.clearSelection();
+        editor.gotoLine(1, 0, false);
+        editor.session.on('change', function () {
+            if (ignoreAceChange) return;
+            syncAceToTextarea();
+            onEdit();
+        });
+        try {
+            var aceInput = editor.textInput && editor.textInput.getElement
+                ? editor.textInput.getElement()
+                : null;
+            if (aceInput) {
+                aceInput.setAttribute('aria-label', 'Python code editor');
+            }
+        } catch (e) { /* ignore */ }
+
+        studentEditor = editor;
+        editor.resize();
+    }
+
     function buildSubmissionPayload() {
         return {
             schema: 'pythongrader-submission',
             version: 1,
             files: {
-                'student.py': ($('#student-source') && $('#student-source').value) || ''
+                'student.py': getStudentSource()
             },
             stdin: ($('#stdin') && $('#stdin').value) || '',
             source_revision: runtime ? runtime.getSourceRevision() : 0,
@@ -239,7 +335,7 @@
         Results.renderGrade($('#score'), $('#results'), null);
         runtime
             .run(
-                $('#student-source').value,
+                getStudentSource(),
                 $('#stdin').value,
                 timeoutMs(),
                 exercise.assets || []
@@ -290,7 +386,7 @@
         setStatus('running', 'Grading…');
         runtime
             .grade(
-                $('#student-source').value,
+                getStudentSource(),
                 evaluationSource(),
                 testMetadata(),
                 exercise.grading || {},
@@ -373,7 +469,7 @@
         if (!window.confirm('Reset to the assignment starter code? Saved work for this placement will be cleared.')) {
             return;
         }
-        $('#student-source').value = starterSource();
+        setStudentSource(starterSource());
         $('#stdin').value = defaultStdin();
         autosizeTextarea($('#stdin'));
         if (runtime) {
@@ -398,7 +494,7 @@
             return;
         }
         if (!window.confirm('Load the reference solution into the editor?')) return;
-        $('#student-source').value = sol;
+        setStudentSource(sol);
         onEdit();
         setStatus('pending', 'Solution loaded — Run before Grade');
     }
@@ -421,13 +517,15 @@
                 el('span', { id: 'status', 'data-state': 'loading', 'aria-live': 'polite', text: 'Loading Python…' })
             ]),
             el('p', { id: 'dirtyNote', className: 'dirty-note' }),
-            el('textarea', {
-                id: 'student-source',
-                className: 'code student-source',
-                rows: '18',
-                spellcheck: 'false',
-                'aria-label': 'Student Python source'
-            })
+            el('div', { className: 'student-editor-wrap', id: 'student-editor-wrap' }, [
+                el('textarea', {
+                    id: 'student-source',
+                    className: 'code student-source',
+                    rows: '18',
+                    spellcheck: 'false',
+                    'aria-label': 'Student Python source'
+                })
+            ])
         ]);
 
         var right = el('div', { className: 'learner-right' }, [
@@ -458,7 +556,8 @@
 
         app.appendChild(el('div', { className: 'learner-layout' }, [left, right]));
 
-        $('#student-source').value = initial.source;
+        setStudentSource(initial.source);
+        initStudentEditor();
         $('#stdin').value = initial.stdin;
         autosizeTextarea($('#stdin'));
         $('#student-source').addEventListener('input', onEdit);
@@ -471,6 +570,9 @@
         $('#btnReset').addEventListener('click', doReset);
         var solBtn = $('#btnSolution');
         if (solBtn) solBtn.addEventListener('click', doLoadSolution);
+        window.addEventListener('resize', function () {
+            if (studentEditor) studentEditor.resize();
+        });
 
         runtime = RuntimeApi.create({
             workerUrl: (cfg.urls && cfg.urls.worker) || 'worker/pyodide-worker.js',
