@@ -4,7 +4,7 @@
   "id": "conditionals-exercise-3-1-001",
   "assignment_version": 1,
   "title": "3.1 Overtime Pay",
-  "prompt": "<p><b>3.1</b> Write a program to prompt the user for hours and rate per hour using input to compute gross pay. Pay the hourly rate for the hours up to 40 and 1.5 times the hourly rate for all hours worked above 40 hours. Use 45 hours and a rate of 10.50 per hour (the pay should be 498.75).</p>",
+  "prompt": "<p><b>3.1</b> Write a program to prompt the user for hours and rate per hour using <b>input</b> to compute gross pay. Pay the hourly rate for hours up to 40 and 1.5 times the hourly rate for all hours worked above 40. Use <b>float()</b> to convert the strings to numbers. For example, if the hours were 45 and the rate were 10.50, the output should be: <code>498.75</code>.</p>",
   "files": {
     "student.py": {
       "mode": "editable",
@@ -21,10 +21,10 @@
     "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"498.75\"\nDESIRED2 = \"Pay: 498.75\"\nSTDIN = \"45\\n10.50\\n\"\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path('student.py', run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open('student.py', encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_input(self):\n        self.assertIn(\"input\", self.src,\n            \"You must prompt the pay and rate using the input() function.\")\n\n    def test_source_print(self):\n        self.assertIn(\"print\", self.src,\n            \"You must use the print function to print the output.\")\n\n    def test_source_if(self):\n        self.assertIn(\"if\", self.src,\n            \"You should use an if statement to decide to do the overtime computation or not.\")\n\n    def test_source_float(self):\n        self.assertIn(\"float\", self.src,\n            \"You should use the built-in float() function to convert from a string to a float.\")\n\n    def test_source_not_45(self):\n        self.assertNotIn(\"45\", self.src,\n            \"You must read the hours using input() and then convert it.\")\n\n    def test_source_not_10_5(self):\n        self.assertNotIn(\"10.5\", self.src,\n            \"You must read the rate using input() and then convert it.\")\n\n    def test_source_not_498(self):\n        self.assertNotIn(\"498\", self.src,\n            \"You must actually calculate the pay.\")\n\n",
     "tests": {
       "OutputTests.test_desired_output": {
-        "title": "Matches desired output",
+        "title": "Matches expected output",
         "group": "Output",
         "points": 10,
-        "feedback": "Compare your program output carefully to the Desired Output."
+        "feedback": "Compare your program output carefully to the example in the assignment description."
       },
       "SourceTests.test_source_input": {
         "title": "Source check: require 'input'",

@@ -23,7 +23,10 @@
             );
             if (msg.exception.traceback) parts.push(msg.exception.traceback);
         }
-        stderrEl.textContent = parts.join('\n');
+        var text = parts.join('\n').trim();
+        stderrEl.textContent = text;
+        var block = document.getElementById('stderr-block');
+        if (block) block.hidden = !text;
     }
 
     function renderGrade(scoreEl, resultsEl, msg) {

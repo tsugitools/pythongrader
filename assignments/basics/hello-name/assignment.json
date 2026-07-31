@@ -4,7 +4,7 @@
   "id": "basics-hello-name-001",
   "assignment_version": 1,
   "title": "Hello, Name",
-  "prompt": "<p>Read a name and print <code>Hello NAME</code>.</p>",
+  "prompt": "<p>Write a program that reads a name with <b>input</b> and prints <code>Hello NAME</code>. For example, if the name entered is <b>Ada</b>, the output should be: <code>Hello Ada</code>.</p>",
   "files": {
     "student.py": {
       "mode": "editable",

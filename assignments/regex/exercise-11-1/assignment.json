@@ -4,7 +4,7 @@
   "id": "regex-exercise-11-1-001",
   "assignment_version": 1,
   "title": "11.1 Answer to Life",
-  "prompt": "<p><b>11.1</b> Write a program that computes the <b>Answer to the Ultimate Question of Life, the Universe, and Everything</b>. Sample output is below.</p>",
+  "prompt": "<p><b>11.1</b> Write a program that computes the <b>Answer to the Ultimate Question of Life, the Universe, and Everything</b>. For example, the output should be: <code>42</code>.</p>",
   "files": {
     "student.py": {
       "mode": "editable",
@@ -21,10 +21,10 @@
     "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"42\"\nDESIRED2 = None\nSTDIN = \"\"\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path('student.py', run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open('student.py', encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_print(self):\n        self.assertIn(\"print\", self.src,\n            \"By now you should know that a print function would be helpful here.\")\n\n    def test_source_star(self):\n        self.assertIn(\"*\", self.src,\n            \"I think that multiplication is involved...\")\n\n",
     "tests": {
       "OutputTests.test_desired_output": {
-        "title": "Matches desired output",
+        "title": "Matches expected output",
         "group": "Output",
         "points": 8,
-        "feedback": "Compare your program output carefully to the Desired Output."
+        "feedback": "Compare your program output carefully to the example in the assignment description."
       },
       "SourceTests.test_source_print": {
         "title": "Source check: require 'print'",

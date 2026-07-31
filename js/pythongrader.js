@@ -155,6 +155,14 @@
         s.textContent = text || state || '';
     }
 
+    function autosizeTextarea(ta) {
+        if (!ta) return;
+        ta.style.height = '0px';
+        var max = Math.floor(window.innerHeight * 0.4);
+        var next = Math.max(ta.scrollHeight, 36);
+        ta.style.height = Math.min(next, max) + 'px';
+    }
+
     function setBusy(isBusy) {
         busy = !!isBusy;
         var run = $('#btnRun');
@@ -367,6 +375,7 @@
         }
         $('#student-source').value = starterSource();
         $('#stdin').value = defaultStdin();
+        autosizeTextarea($('#stdin'));
         if (runtime) {
             runtime.resetRevisions();
             runtime.bumpSourceRevision();
@@ -397,49 +406,48 @@
     function renderLearner() {
         var initial = loadInitialSource();
         app.innerHTML = '';
-        app.appendChild(el('section', { className: 'prompt-block' }, [
-            el('h1', { text: exercise.title || 'Python exercise' }),
-            el('div', { className: 'prompt', html: exercise.prompt || '' })
-        ]));
 
-        var editor = el('section', { className: 'panel' }, [
-            el('h2', { text: 'Editor' }),
-            el('label', { for: 'student-source', text: 'student.py' }),
-            el('textarea', {
-                id: 'student-source',
-                className: 'code',
-                rows: '14',
-                spellcheck: 'false',
-                'aria-label': 'Student Python source'
-            }),
-            el('label', { for: 'stdin', text: 'Standard input' }),
-            el('textarea', {
-                id: 'stdin',
-                className: 'code',
-                rows: '3',
-                spellcheck: 'false',
-                'aria-label': 'Standard input'
-            }),
+        var left = el('div', { className: 'learner-left' }, [
+            el('section', { className: 'prompt-block' }, [
+                el('div', { className: 'prompt', html: exercise.prompt || '' })
+            ]),
             el('div', { className: 'toolbar' }, [
                 el('button', { type: 'button', className: 'btn btn-primary', id: 'btnRun', text: 'Run / Restart' }),
                 el('button', { type: 'button', className: 'btn', id: 'btnGrade', text: 'Grade', disabled: 'disabled' }),
-                el('button', { type: 'button', className: 'btn', id: 'btnReset', text: 'Reset to starter' }),
+                el('button', { type: 'button', className: 'btn', id: 'btnReset', text: 'Reset' }),
                 cfg.isInstructor
                     ? el('button', { type: 'button', className: 'btn', id: 'btnSolution', text: 'Load solution' })
                     : null,
                 el('span', { id: 'status', 'data-state': 'loading', 'aria-live': 'polite', text: 'Loading Python…' })
             ]),
-            el('p', { id: 'dirtyNote', className: 'dirty-note' })
+            el('p', { id: 'dirtyNote', className: 'dirty-note' }),
+            el('textarea', {
+                id: 'student-source',
+                className: 'code student-source',
+                rows: '18',
+                spellcheck: 'false',
+                'aria-label': 'Student Python source'
+            })
         ]);
-        app.appendChild(editor);
 
-        var out = el('div', { className: 'grid-2' }, [
+        var right = el('div', { className: 'learner-right' }, [
+            el('section', { className: 'panel panel-stdin' }, [
+                el('label', { for: 'stdin', text: 'Standard Input (stdin)' }),
+                el('textarea', {
+                    id: 'stdin',
+                    className: 'code stdin-autosize',
+                    rows: '1',
+                    spellcheck: 'false',
+                    'aria-label': 'Standard Input (stdin)'
+                })
+            ]),
             el('section', { className: 'panel' }, [
-                el('h2', { text: 'Output' }),
-                el('label', { for: 'stdout', text: 'stdout' }),
+                el('label', { for: 'stdout', text: 'Standard Output (stdout)' }),
                 el('pre', { id: 'stdout', className: 'output', tabindex: '0' }),
-                el('label', { for: 'stderr', text: 'stderr / errors' }),
-                el('pre', { id: 'stderr', className: 'output', tabindex: '0' })
+                el('div', { id: 'stderr-block', hidden: 'hidden' }, [
+                    el('label', { for: 'stderr', text: 'Standard Error (stderr)' }),
+                    el('pre', { id: 'stderr', className: 'output', tabindex: '0' })
+                ])
             ]),
             el('section', { className: 'panel' }, [
                 el('h2', { text: 'Test results' }),
@@ -447,12 +455,17 @@
                 el('div', { id: 'results' })
             ])
         ]);
-        app.appendChild(out);
+
+        app.appendChild(el('div', { className: 'learner-layout' }, [left, right]));
 
         $('#student-source').value = initial.source;
         $('#stdin').value = initial.stdin;
+        autosizeTextarea($('#stdin'));
         $('#student-source').addEventListener('input', onEdit);
-        $('#stdin').addEventListener('input', onEdit);
+        $('#stdin').addEventListener('input', function () {
+            autosizeTextarea($('#stdin'));
+            onEdit();
+        });
         $('#btnRun').addEventListener('click', doRun);
         $('#btnGrade').addEventListener('click', doGrade);
         $('#btnReset').addEventListener('click', doReset);

@@ -4,7 +4,7 @@
   "id": "dictionaries-exercise-9-4-001",
   "assignment_version": 1,
   "title": "9.4 Most Prolific Sender",
-  "prompt": "<p><b>9.4</b> Write a program to read through <b>mbox-short.txt</b> and figure out who has sent the greatest number of mail messages. Build a dictionary of counts and find the most prolific sender.</p>",
+  "prompt": "<p><b>9.4</b> Write a program to read through <b>mbox-short.txt</b> and figure out who has sent the greatest number of mail messages. Look for lines that start with <code>From </code>, take the second word as the sender, and build a dictionary that maps each address to a count. Then find the most prolific sender. For example, for <b>mbox-short.txt</b> the output should be: <code>cwen@iupui.edu 5</code>.</p>",
   "files": {
     "student.py": {
       "mode": "editable",
@@ -21,10 +21,10 @@
     "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"cwen@iupui.edu 5\"\nDESIRED2 = None\nSTDIN = \"mbox-short.txt\\n\"\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path('student.py', run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open('student.py', encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_for(self):\n        self.assertIn(\"for\", self.src,\n            \"You need a for loop to read the lines in the file.\")\n\n    def test_source_split(self):\n        self.assertIn(\"split\", self.src,\n            \"You should use split() to break each line into words.\")\n\n    def test_source_not_cwen_iupui_edu(self):\n        self.assertNotIn(\"cwen@iupui.edu\", self.src,\n            \"You need a for loop to read the data in the file.\")\n\n    def test_source_if(self):\n        self.assertIn(\"if\", self.src,\n            \"You need to use one or more if statements to skip the lines that do not start with 'From '.\")\n\n    def test_source_open(self):\n        self.assertIn(\"open\", self.src,\n            \"You need to use open() to open the file.\")\n\n",
     "tests": {
       "OutputTests.test_desired_output": {
-        "title": "Matches desired output",
+        "title": "Matches expected output",
         "group": "Output",
         "points": 10,
-        "feedback": "Compare your program output carefully to the Desired Output."
+        "feedback": "Compare your program output carefully to the example in the assignment description."
       },
       "SourceTests.test_source_for": {
         "title": "Source check: require 'for'",
