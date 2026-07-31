@@ -880,6 +880,18 @@
         parsed.type = 'pythongrader';
         parsed.title = $('#author-title').value || parsed.title || '';
         parsed.prompt = readPromptField() || parsed.prompt || '';
+        var objectiveEl = $('#author-learning-objective');
+        if (objectiveEl) {
+            parsed.learning_objective = objectiveEl.value.trim();
+        }
+        var hintEl = $('#author-hint');
+        if (hintEl) {
+            parsed.hint = hintEl.value.trim();
+        }
+        var explainEl = $('#author-solution-explanation');
+        if (explainEl) {
+            parsed.solution_explanation = explainEl.value.trim();
+        }
         if (!parsed.files) parsed.files = {};
         if (!parsed.files['student.py']) parsed.files['student.py'] = { mode: 'editable' };
         parsed.files['student.py'].starter = $('#author-starter').value;
@@ -905,6 +917,18 @@
         exercise = ex;
         $('#author-title').value = ex.title || '';
         setPromptField(ex.prompt || '');
+        var objectiveEl = $('#author-learning-objective');
+        if (objectiveEl) {
+            objectiveEl.value = ex.learning_objective || '';
+        }
+        var hintEl = $('#author-hint');
+        if (hintEl) {
+            hintEl.value = ex.hint || '';
+        }
+        var explainEl = $('#author-solution-explanation');
+        if (explainEl) {
+            explainEl.value = ex.solution_explanation || '';
+        }
         var f = (ex.files && ex.files['student.py']) || {};
         $('#author-starter').value = f.starter || '';
         $('#author-solution').value = f.solution || '';
@@ -990,6 +1014,51 @@
         done(ok);
     }
 
+    /**
+     * Copy HTML for rich text editors (Udemy instructions).
+     * Puts both text/html and a plain-text fallback on the clipboard.
+     */
+    function copyHtmlToClipboard(html, btn) {
+        var done = function (ok) {
+            if (!btn) return;
+            var prev = btn.textContent;
+            btn.textContent = ok ? 'Copied' : 'Copy failed';
+            setTimeout(function () {
+                btn.textContent = prev;
+            }, 1500);
+        };
+        var plain = String(html)
+            .replace(/<\s*br\s*\/?>/gi, '\n')
+            .replace(/<\/\s*p\s*>/gi, '\n\n')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+
+        if (navigator.clipboard && typeof ClipboardItem !== 'undefined' && navigator.clipboard.write) {
+            try {
+                var item = new ClipboardItem({
+                    'text/html': new Blob([html], { type: 'text/html' }),
+                    'text/plain': new Blob([plain || html], { type: 'text/plain' })
+                });
+                navigator.clipboard.write([item]).then(function () {
+                    done(true);
+                }).catch(function () {
+                    copyTextToClipboard(html, btn);
+                });
+                return;
+            } catch (e) {
+                // fall through
+            }
+        }
+        copyTextToClipboard(html, btn);
+    }
+
     function renderUdemyPasteFields(host, members) {
         var Export = window.PythonGraderUdemyExport;
         var fields = (Export && Export.PASTE_FIELDS) || [];
@@ -997,7 +1066,7 @@
         wrap.appendChild(el('h4', { text: 'Copy into Udemy' }));
         wrap.appendChild(el('p', {
             className: 'udemy-paste-help',
-            text: 'Paste each field into the matching Udemy coding-exercise box. No ZIP extraction needed.'
+            text: 'Paste each field into the matching Udemy coding-exercise box. For Instructions, Hint, and Solution explanation, use Copy as Rich Text so Udemy’s editors keep formatting. Solution explanation is last.'
         }));
 
         fields.forEach(function (field) {
@@ -1006,13 +1075,18 @@
             var section = el('section', { className: 'udemy-paste-field' });
             var head = el('div', { className: 'udemy-paste-head' });
             head.appendChild(el('h5', { text: field.label + ' (' + field.file + ')' }));
+            var isHtml = field.clipboard === 'html';
             var btnCopy = el('button', {
                 type: 'button',
                 className: 'btn btn-primary',
-                text: 'Copy'
+                text: isHtml ? 'Copy as Rich Text' : 'Copy'
             });
             btnCopy.addEventListener('click', function () {
-                copyTextToClipboard(text, btnCopy);
+                if (isHtml) {
+                    copyHtmlToClipboard(text, btnCopy);
+                } else {
+                    copyTextToClipboard(text, btnCopy);
+                }
             });
             head.appendChild(btnCopy);
             section.appendChild(head);
@@ -1190,6 +1264,27 @@
             el('div', { className: 'author-meta' }, [
                 el('label', { for: 'author-title', text: 'Title' }),
                 el('input', { type: 'text', id: 'author-title' }),
+                el('label', { for: 'author-learning-objective', text: 'Learning objective (Udemy)' }),
+                el('input', {
+                    type: 'text',
+                    id: 'author-learning-objective',
+                    'aria-label': 'Learning objective for Udemy export'
+                }),
+                el('label', { for: 'author-hint', text: 'Hint (Udemy rich text / HTML)' }),
+                el('textarea', {
+                    id: 'author-hint',
+                    rows: '2',
+                    'aria-label': 'Learner hint for Udemy export (HTML or plain text)'
+                }),
+                el('label', {
+                    for: 'author-solution-explanation',
+                    text: 'Solution explanation (Udemy rich text / HTML)'
+                }),
+                el('textarea', {
+                    id: 'author-solution-explanation',
+                    rows: '3',
+                    'aria-label': 'Solution explanation for Udemy export (HTML or plain text)'
+                }),
                 promptField,
                 el('label', { for: 'author-starter', text: 'Starter (student.py)' }),
                 el('textarea', { id: 'author-starter', className: 'code', rows: '8' }),

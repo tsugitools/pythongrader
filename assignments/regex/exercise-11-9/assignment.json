@@ -2,9 +2,12 @@
   "type": "pythongrader",
   "schema_version": 1,
   "id": "regex-exercise-11-9-001",
-  "assignment_version": 2,
+  "assignment_version": 1,
   "title": "11.9 Regex Line Count",
   "prompt": "<p><b>11.9</b> Write a program that reads through <b>mbox-short.txt</b> and counts how many lines match the regular expression <code>^From </code> using <b>re.search()</b>. Hard-code that pattern in your program (do not prompt for it). When you run the program, the output should be: <code>mbox-short.txt had 27 lines that matched ^From </code>.</p>",
+  "learning_objective": "Count lines in a mailbox file that match a regular expression with re.search().",
+  "hint": "import re, open mbox-short.txt, and use re.search(r'^From ', line) inside your counting loop.",
+  "solution_explanation": "re.search(r'^From ', line) is true when a line starts with From followed by a space. Counting those matches reports how many such lines the file contains.",
   "files": {
     "student.py": {
       "mode": "editable",
@@ -18,13 +21,13 @@
   },
   "evaluation": {
     "filename": "evaluation.py",
-    "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"mbox-short.txt had 27 lines that matched ^From \"\nDESIRED2 = None\nSTDIN = \"\"\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path('student.py', run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open('student.py', encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_for(self):\n        self.assertIn(\"for\", self.src,\n            \"You need a for loop to read the lines in the file.\")\n\n    def test_source_re_search(self):\n        self.assertIn(\"re.search\", self.src,\n            \"You need to use re.search() to match the regular expression.\")\n\n    def test_source_import_re(self):\n        self.assertIn(\"import re\", self.src,\n            \"You need to import the re module.\")\n\n    def test_source_From(self):\n        self.assertIn(\"^From \", self.src,\n            \"Hard-code the regular expression ^From  in your program.\")\n\n",
+    "source": "import io\nimport os\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"mbox-short.txt had 27 lines that matched ^From \"\nDESIRED2 = None\nSTDIN = \"\"\n\n\ndef student_file():\n    \"\"\"PythonGrader uses student.py; Udemy coding exercises use exercise.py.\"\"\"\n    for name in ('student.py', 'exercise.py'):\n        if os.path.isfile(name):\n            return name\n    return 'student.py'\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path(student_file(), run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open(student_file(), encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_for(self):\n        self.assertIn(\"for\", self.src,\n            \"You need a for loop to read the lines in the file.\")\n\n    def test_source_re_search(self):\n        self.assertIn(\"re.search\", self.src,\n            \"You need to use re.search() to match the regular expression.\")\n\n    def test_source_import_re(self):\n        self.assertIn(\"import re\", self.src,\n            \"You need to import the re module.\")\n\n    def test_source_From(self):\n        self.assertIn(\"^From \", self.src,\n            \"Hard-code the regular expression ^From  in your program.\")\n\n",
     "tests": {
       "OutputTests.test_desired_output": {
-        "title": "Matches expected output",
+        "title": "Matches desired output",
         "group": "Output",
-        "points": 6,
-        "feedback": "Compare your program output carefully to the example in the assignment description."
+        "points": 10,
+        "feedback": "Compare your program output carefully to the Desired Output."
       },
       "SourceTests.test_source_for": {
         "title": "Source check: require 'for'",
@@ -61,7 +64,7 @@
   ],
   "packages": [],
   "grading": {
-    "maximum_points": 10,
+    "maximum_points": 14,
     "partial_credit": true
   },
   "exports": {

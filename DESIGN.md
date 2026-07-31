@@ -213,6 +213,8 @@ Student source and the most recent standard input are stored in `lti_result.json
   "assignment_version": 1,
   "title": "Hello, Name",
   "prompt": "<p>Read a name and print <code>Hello NAME</code>.</p>",
+  "learning_objective": "Prompt for a name with input() and print a greeting that includes that name.",
+  "hint": "Store the result of input() in a variable, then pass both 'Hello' and that variable to print().",
   "files": {
     "student.py": {
       "mode": "editable",
@@ -728,18 +730,20 @@ downloadBlob(blob, "hello-name-udemy.zip");
 
 ```text
 hello-name-udemy.zip
-├── starter.py
+├── learning-objective.txt
 ├── solution.py
 ├── evaluation.py
-├── instructions.md
-├── solution-explanation.md
+├── instructions.html
+├── starter.py
+├── hint.html
+├── solution-explanation.html
 ├── manifest.json
 └── COMPATIBILITY.md
 ```
 
-`hints.md` is included when hints exist. Compatible small assets may be included later after the exact Udemy target behavior is verified. Phase 1 reports native assets as unsupported rather than pretending they work.
+`hints.md` may still be included in the ZIP when per-test feedback exists (review aid only; not a Udemy paste field). Compatible small assets may be included later after the exact Udemy target behavior is verified. Phase 1 reports native assets as unsupported rather than pretending they work.
 
-These are reviewable authoring files. If Udemy requires manual paste rather than ZIP import, the ZIP still provides a convenient single download and clear file separation.
+These are reviewable authoring files. If Udemy requires manual paste rather than ZIP import, the ZIP still provides a convenient single download and clear file separation. Paste order matches Udemy authoring and ends with Hint, then Solution explanation. `learning-objective.txt` is plain text; `instructions.html`, `hint.html`, and `solution-explanation.html` are HTML for Udemy's rich text editors.
 
 ### Translation rules
 
@@ -748,12 +752,18 @@ Phase 1 export is intentionally conservative:
 - `student.py` starter becomes `starter.py`;
 - `student.py` solution becomes `solution.py`;
 - ordinary standard-library evaluation source becomes `evaluation.py`;
-- prompt HTML is converted to readable Markdown;
-- solution explanation and hints become Markdown files;
+- evaluation references to `student.py` are rewritten to Udemy's learner file `exercise.py`;
+- `learning_objective` becomes `learning-objective.txt` for Udemy's Plan-exercise field;
+- `hint` is exported as `hint.html` for Udemy's rich text Hint field (plain text wrapped in `<p>`);
+- prompt HTML is exported as `instructions.html` for Udemy's rich text editor;
+- `solution_explanation` is exported last as `solution-explanation.html` for Udemy's rich text field;
+- per-test feedback may still appear in optional `hints.md` for review;
 - PythonGrader point weights remain documented in the manifest;
 - the exporter reports when Udemy will not preserve native weighting or feedback;
 - PythonGrader-only helper imports are forbidden in Phase 1 evaluation code;
 - packages, multiple student files, and assets are unsupported until verified.
+
+Udemy coding exercises execute learner code as `exercise.py`. PythonGrader keeps `student.py` as the native editable file. Built-in evaluations prefer whichever of those files exists so the same unittest source can grade in both environments; the exporter still rewrites hardcoded `student.py` paths for hand-authored tests.
 
 ### Compatibility levels
 
@@ -911,7 +921,8 @@ Premature optimization of Pyodide initialization should not complicate the initi
 
 - minimal compatible assignment;
 - `unittest.mock.patch`;
-- prompt and explanation conversion;
+- prompt HTML for rich text instructions;
+- explanation conversion;
 - hints;
 - partial-credit compatibility warning;
 - asset incompatibility;

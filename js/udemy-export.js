@@ -2,13 +2,37 @@
  * PythonGrader → Udemy export (browser-only ZIP via fflate).
  *
  * Phase 1 package:
- *   starter.py, solution.py, evaluation.py, instructions.md,
- *   solution-explanation.md, hints.md (optional), manifest.json, COMPATIBILITY.md
+ *   learning-objective.txt, solution.py, evaluation.py, instructions.html,
+ *   starter.py, hint.html, solution-explanation.html, hints.md (optional),
+ *   manifest.json, COMPATIBILITY.md
+ *
+ * Udemy coding exercises use exercise.py for learner code; PythonGrader uses
+ * student.py. Evaluation source is rewritten on export accordingly.
+ * Instructions, Hint, and Solution explanation are HTML for Udemy's RTEs.
  */
 (function (global) {
     'use strict';
 
     var FORBIDDEN_IMPORT_RE = /\b(?:from\s+pythongrader|import\s+pythongrader)\b/;
+
+    /** Udemy learner file name (PythonGrader uses student.py). */
+    var UDEMY_STUDENT_FILE = 'exercise.py';
+    var NATIVE_STUDENT_FILE = 'student.py';
+
+    /**
+     * Rewrite PythonGrader student.py references for Udemy's exercise.py.
+     * Matches string literals and bare path mentions in evaluation source.
+     */
+    function toUdemyEvaluation(source) {
+        if (!source) return '';
+        var out = String(source);
+        // Quoted path literals first, then any remaining bare filename.
+        out = out.replace(/(['"])student\.py\1/g, function (m, q) {
+            return q + UDEMY_STUDENT_FILE + q;
+        });
+        out = out.replace(/\bstudent\.py\b/g, UDEMY_STUDENT_FILE);
+        return out;
+    }
 
     function slugify(title, id) {
         var base = (title || id || 'assignment').toString().toLowerCase();
@@ -16,6 +40,49 @@
         return (base || 'assignment').slice(0, 48);
     }
 
+    /**
+     * Normalize HTML for Udemy's rich text editors
+     * (instructions, hint, solution explanation).
+     * Plain text is wrapped in <p>; existing HTML is left as-is (not Markdown).
+     */
+    function toUdemyRichTextHtml(html) {
+        if (!html) return '';
+        var s = String(html).replace(/\r\n?/g, '\n').trim();
+        if (!s) return '';
+        if (s.indexOf('<') === -1) {
+            return '<p>' + escapeHtml(s) + '</p>\n';
+        }
+        return s + '\n';
+    }
+
+    function toUdemyInstructionsHtml(html) {
+        return toUdemyRichTextHtml(html);
+    }
+
+    function escapeHtml(s) {
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function stripTags(s) {
+        return String(s).replace(/<[^>]+>/g, '');
+    }
+
+    function decodeEntities(s) {
+        return String(s)
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'");
+    }
+
+    /** Keep for hints / compatibility docs that remain Markdown. */
     function htmlToMarkdown(html) {
         if (!html) return '';
         var s = String(html);
@@ -48,20 +115,6 @@
         s = decodeEntities(s);
         s = s.replace(/\n{3,}/g, '\n\n').trim();
         return s;
-    }
-
-    function stripTags(s) {
-        return String(s).replace(/<[^>]+>/g, '');
-    }
-
-    function decodeEntities(s) {
-        return String(s)
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&amp;/g, '&')
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, "'");
     }
 
     function collectHints(exercise) {
@@ -112,9 +165,39 @@
             if (evaluation.indexOf('unittest.mock') >= 0 || evaluation.indexOf('from unittest.mock') >= 0) {
                 compatible.push('unittest.mock.patch');
             }
+            if (evaluation.indexOf(NATIVE_STUDENT_FILE) >= 0) {
+                partial.push(
+                    'Evaluation references to ' + NATIVE_STUDENT_FILE +
+                    ' are rewritten to ' + UDEMY_STUDENT_FILE + ' for Udemy'
+                );
+            }
         }
 
         if (exercise && exercise.prompt) compatible.push('instructions');
+
+        var objective = exercise && typeof exercise.learning_objective === 'string'
+            ? exercise.learning_objective.trim() : '';
+        if (objective) {
+            compatible.push('learning objective');
+        } else {
+            partial.push('Missing learning_objective (Udemy Plan exercise field)');
+        }
+
+        var hint = exercise && typeof exercise.hint === 'string'
+            ? exercise.hint.trim() : '';
+        if (hint) {
+            compatible.push('hint');
+        } else {
+            partial.push('Missing hint (Udemy learner Hint field)');
+        }
+
+        var explanation = exercise && typeof exercise.solution_explanation === 'string'
+            ? exercise.solution_explanation.trim() : '';
+        if (explanation) {
+            compatible.push('solution explanation');
+        } else {
+            partial.push('Missing solution_explanation (Udemy Solution explanation field)');
+        }
 
         var fileKeys = exercise && exercise.files ? Object.keys(exercise.files) : [];
         if (fileKeys.length > 1 || (fileKeys.length === 1 && fileKeys[0] !== 'student.py')) {
@@ -146,7 +229,7 @@
 
         var hints = collectHints(exercise || {});
         if (hints.length) {
-            partial.push('Progressive hints / feedback are exported as a separate document');
+            partial.push('Per-test feedback is also exported in hints.md for review');
         }
 
         if (exercise && exercise.exports && exercise.exports.udemy
@@ -220,11 +303,17 @@
                 builtin: exercise.builtin || null
             },
             files: {
-                starter: 'starter.py',
+                learning_objective: 'learning-objective.txt',
                 solution: 'solution.py',
                 evaluation: 'evaluation.py',
-                instructions: 'instructions.md'
+                instructions: 'instructions.html',
+                starter: 'starter.py',
+                hint: 'hint.html',
+                solution_explanation: 'solution-explanation.html'
             },
+            learning_objective: (exercise.learning_objective || '').toString().trim(),
+            hint: (exercise.hint || '').toString().trim(),
+            solution_explanation: (exercise.solution_explanation || '').toString().trim(),
             grading: exercise.grading || {},
             tests: testList,
             compatibility: {
@@ -236,7 +325,11 @@
             },
             notes: [
                 'Generated entirely in the browser by PythonGrader.',
-                'Udemy may require manual paste from these files.'
+                'Udemy may require manual paste from these files.',
+                'Paste order ends with Hint, then Solution explanation.',
+                'Instructions, Hint, and Solution explanation are HTML for Udemy RTEs.',
+                'Udemy learner code is ' + UDEMY_STUDENT_FILE +
+                    '; evaluation.py is rewritten from ' + NATIVE_STUDENT_FILE + '.'
             ]
         };
     }
@@ -244,12 +337,25 @@
     function buildMembers(exercise, report) {
         var student = (exercise.files && exercise.files['student.py']) || {};
         var members = {};
-        members['starter.py'] = student.starter || '';
+        var objective = (exercise.learning_objective || '').toString().trim();
+        if (objective) {
+            members['learning-objective.txt'] = objective + '\n';
+        }
+        // Udemy authoring order ends with hint → solution explanation.
         members['solution.py'] = student.solution || '';
-        members['evaluation.py'] = (exercise.evaluation && exercise.evaluation.source) || '';
-        members['instructions.md'] = htmlToMarkdown(exercise.prompt || '');
-        if (exercise.solution_explanation) {
-            members['solution-explanation.md'] = String(exercise.solution_explanation).trim() + '\n';
+        members['evaluation.py'] = toUdemyEvaluation(
+            (exercise.evaluation && exercise.evaluation.source) || ''
+        );
+        members['instructions.html'] = toUdemyInstructionsHtml(exercise.prompt || '');
+        members['starter.py'] = student.starter || '';
+        var hintHtml = toUdemyRichTextHtml(exercise.hint || '');
+        if (hintHtml) {
+            members['hint.html'] = hintHtml;
+        }
+        // Last Udemy paste field: solution explanation (rich text).
+        var explanationHtml = toUdemyRichTextHtml(exercise.solution_explanation || '');
+        if (explanationHtml) {
+            members['solution-explanation.html'] = explanationHtml;
         }
         if (report.hints && report.hints.length) {
             var hintLines = ['# Hints and feedback', ''];
@@ -326,14 +432,18 @@
         };
     }
 
-    /** Fields instructors typically paste into the Udemy coding-exercise UI. */
+    /**
+     * Fields instructors typically paste into the Udemy coding-exercise UI.
+     * clipboard: 'html' copies text/html for rich text editors.
+     */
     var PASTE_FIELDS = [
-        { file: 'instructions.md', label: 'Instructions' },
-        { file: 'starter.py', label: 'Starter code' },
+        { file: 'learning-objective.txt', label: 'Learning objective' },
         { file: 'solution.py', label: 'Solution' },
         { file: 'evaluation.py', label: 'Evaluation (unittest)' },
-        { file: 'solution-explanation.md', label: 'Solution explanation' },
-        { file: 'hints.md', label: 'Hints / feedback' }
+        { file: 'instructions.html', label: 'Instructions', clipboard: 'html' },
+        { file: 'starter.py', label: 'Learner file' },
+        { file: 'hint.html', label: 'Hint', clipboard: 'html' },
+        { file: 'solution-explanation.html', label: 'Solution explanation', clipboard: 'html' }
     ];
 
     global.PythonGraderUdemyExport = {
@@ -343,7 +453,12 @@
         buildMembers: buildMembers,
         buildCompatibilityMarkdown: buildCompatibilityMarkdown,
         htmlToMarkdown: htmlToMarkdown,
+        toUdemyRichTextHtml: toUdemyRichTextHtml,
+        toUdemyInstructionsHtml: toUdemyInstructionsHtml,
+        toUdemyEvaluation: toUdemyEvaluation,
         slugify: slugify,
-        PASTE_FIELDS: PASTE_FIELDS
+        PASTE_FIELDS: PASTE_FIELDS,
+        UDEMY_STUDENT_FILE: UDEMY_STUDENT_FILE,
+        NATIVE_STUDENT_FILE: NATIVE_STUDENT_FILE
     };
 })(typeof window !== 'undefined' ? window : self);

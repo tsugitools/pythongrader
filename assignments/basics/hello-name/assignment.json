@@ -4,7 +4,9 @@
   "id": "basics-hello-name-001",
   "assignment_version": 1,
   "title": "Hello, Name",
-  "prompt": "<p>Write a program that reads a name with <b>input</b> and prints <code>Hello NAME</code>. For example, if the name entered is <b>Ada</b>, the output should be: <code>Hello Ada</code>.</p>",
+  "prompt": "<p>Write a program that reads a name with <b>input</b> and prints <code>Hello NAME</code>. The autograder will provide the name as input. For example, when the name is <b>Ada</b>, the output should be: <code>Hello Ada</code>.</p>",
+  "learning_objective": "Prompt for a name with input() and print a greeting that includes that name.",
+  "hint": "Store the result of input() in a variable, then pass both 'Hello' and that variable to print().",
   "files": {
     "student.py": {
       "mode": "editable",
@@ -18,7 +20,7 @@
   },
   "evaluation": {
     "filename": "evaluation.py",
-    "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nclass HelloNameTests(unittest.TestCase):\n    def run_student(self, name):\n        output = io.StringIO()\n        with patch('builtins.input', return_value=name):\n            with patch('sys.stdout', output):\n                runpy.run_path('student.py', run_name='__main__')\n        return output.getvalue().strip()\n\n    def test_chuck(self):\n        self.assertEqual(self.run_student('Chuck'), 'Hello Chuck')\n\n    def test_ada(self):\n        self.assertEqual(self.run_student('Ada'), 'Hello Ada')\n",
+    "source": "import io\nimport os\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\n\ndef student_file():\n    \"\"\"PythonGrader uses student.py; Udemy coding exercises use exercise.py.\"\"\"\n    for name in ('student.py', 'exercise.py'):\n        if os.path.isfile(name):\n            return name\n    return 'student.py'\n\n\nclass HelloNameTests(unittest.TestCase):\n    def run_student(self, name):\n        output = io.StringIO()\n        with patch('builtins.input', return_value=name):\n            with patch('sys.stdout', output):\n                runpy.run_path(student_file(), run_name='__main__')\n        return output.getvalue().strip()\n\n    def test_chuck(self):\n        self.assertEqual(self.run_student('Chuck'), 'Hello Chuck')\n\n    def test_ada(self):\n        self.assertEqual(self.run_student('Ada'), 'Hello Ada')\n",
     "tests": {
       "HelloNameTests.test_chuck": {
         "title": "Greets Chuck",

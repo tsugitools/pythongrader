@@ -60,7 +60,7 @@ EXERCISES = [
         "desired2": None,
         "starter": '# The code below almost works\n\nname = input("Enter your name")\nprint("Howdy")\n',
         "solution": 'name = input("Enter your name: ")\nprint("Hello", name)\n',
-        "prompt": "<b>2.2</b> Write a program that uses <b>input</b> to prompt a user for their name and then welcomes them. Enter <b>Sarah</b> when prompted so your output will match the desired output.",
+        "prompt": "<b>2.2</b> Write a program that uses <b>input</b> to prompt a user for their name and then welcomes them. The autograder will provide the name as input.",
         "checks": {
             "input": "You must prompt for the user's name using the input() function.",
             "!Sarah": "You must actually prompt for the user's name",
@@ -79,7 +79,7 @@ EXERCISES = [
         "desired2": None,
         "starter": '# This first line is provided for you\n\nhrs = input("Enter Hours:")\n',
         "solution": 'hrs = input("Enter Hours:")\nrate = input("Enter Rate:")\npay = float(hrs) * float(rate)\nprint("Pay:", pay)\n',
-        "prompt": "<b>2.3</b> Write a program to prompt the user for hours and rate per hour using input to compute gross pay. Use 35 hours and a rate of 2.75 per hour to test the program (the pay should be 96.25). Use <b>input</b> to read a string and <b>float()</b> to convert the string to a number.",
+        "prompt": "<b>2.3</b> Write a program to prompt the user for hours and rate per hour using <b>input</b> to compute gross pay. Use <b>input</b> to read a string and <b>float()</b> to convert the string to a number. The autograder will provide the hours and rate as input (for the sample data, the pay should be 96.25).",
         "checks": {
             "input": "You must prompt the pay and rate using the input() function.",
             "print": "You must use the print function to print the output.",
@@ -102,7 +102,7 @@ EXERCISES = [
         "desired2": "Pay: 498.75",
         "starter": 'hrs = input("Enter Hours:")\nh = float(hrs)\n',
         "solution": 'hrs = input("Enter Hours:")\nrate = input("Enter Rate:")\nh = float(hrs)\nr = float(rate)\nif h <= 40:\n    pay = h * r\nelse:\n    pay = 40 * r + (h - 40) * r * 1.5\nprint(pay)\n',
-        "prompt": "<b>3.1</b> Write a program to prompt the user for hours and rate per hour using input to compute gross pay. Pay the hourly rate for the hours up to 40 and 1.5 times the hourly rate for all hours worked above 40 hours. Use 45 hours and a rate of 10.50 per hour (the pay should be 498.75).",
+        "prompt": "<b>3.1</b> Write a program to prompt the user for hours and rate per hour using input to compute gross pay. Pay the hourly rate for the hours up to 40 and 1.5 times the hourly rate for all hours worked above 40 hours. The autograder will provide the hours and rate as input (for the sample data, the pay should be 498.75).",
         "checks": {
             "input": "You must prompt the pay and rate using the input() function.",
             "print": "You must use the print function to print the output.",
@@ -125,7 +125,7 @@ EXERCISES = [
         "desired2": None,
         "starter": 'score = input("Enter Score: ")\n',
         "solution": 'score = input("Enter Score: ")\ntry:\n    score = float(score)\nexcept:\n    print("Bad score")\n    quit()\nif score < 0.0 or score > 1.0:\n    print("Bad score")\n    quit()\nif score >= 0.9:\n    print("A")\nelif score >= 0.8:\n    print("B")\nelif score >= 0.7:\n    print("C")\nelif score >= 0.6:\n    print("D")\nelse:\n    print("F")\n',
-        "prompt": "<b>3.3</b> Write a program to prompt for a score between 0.0 and 1.0. If the score is out of range, print an error. If the score is between 0.0 and 1.0, print a grade using the table A/B/C/D/F. For the test, enter a score of 0.85.",
+        "prompt": "<b>3.3</b> Write a program to prompt for a score between 0.0 and 1.0. If the score is out of range, print an error. If the score is between 0.0 and 1.0, print a grade using the table A/B/C/D/F. The autograder will provide the score as input (for the sample data, the grade should be B).",
         "checks": {
             "input": "You must prompt for the score using the input() function.",
             "float": "You should use the built-in float() function to convert from a string to a float.",
@@ -146,7 +146,7 @@ EXERCISES = [
         "desired2": None,
         "starter": 'def computepay(h, r):\n    return 42.37\n\nhrs = input("Enter Hours:")\np = computepay(10, 20)\nprint("Pay", p)\n',
         "solution": 'def computepay(h, r):\n    if h <= 40:\n        return h * r\n    return 40 * r + (h - 40) * r * 1.5\n\nhrs = input("Enter Hours:")\nrate = input("Enter Rate:")\nh = float(hrs)\nr = float(rate)\np = computepay(h, r)\nprint("Pay", p)\n',
-        "prompt": "<b>4.6</b> Write a program to prompt the user for hours and rate per hour using input to compute gross pay. Put the logic in a function called <b>computepay()</b> and use the function to do the computation. Use 45 hours and a rate of 10.50 per hour (pay should be 498.75).",
+        "prompt": "<b>4.6</b> Write a program to prompt the user for hours and rate per hour using input to compute gross pay. Put the logic in a function called <b>computepay()</b> and use the function to do the computation. The autograder will provide the hours and rate as input (for the sample data, the pay should be 498.75).",
         "checks": {
             "input": "You must prompt the hours and rate using the input() function.",
             "print": "You must use the print function to print the output.",
@@ -173,7 +173,7 @@ EXERCISES = [
         "desired2": None,
         "starter": 'largest = None\nsmallest = None\nwhile True:\n    num = input("Enter a number: ")\n    if num == "done":\n        break\n    print(num)\n\nprint("Maximum", largest)\n',
         "solution": 'largest = None\nsmallest = None\nwhile True:\n    num = input("Enter a number: ")\n    if num == "done":\n        break\n    try:\n        num = int(num)\n    except:\n        print("Invalid input")\n        continue\n    if largest is None or num > largest:\n        largest = num\n    if smallest is None or num < smallest:\n        smallest = num\n\nprint("Maximum is", largest)\nprint("Minimum is", smallest)\n',
-        "prompt": "<b>5.2</b> Write a program that repeatedly prompts a user for integer numbers until the user enters 'done'. Once 'done' is entered, print out the largest and smallest of the numbers. If the user enters anything other than a valid number catch it with a try/except. Enter 7, 2, bob, 10, and 4 and match the output below.",
+        "prompt": "<b>5.2</b> Write a program that repeatedly prompts a user for integer numbers until the user enters 'done'. Once 'done' is entered, print out the largest and smallest of the numbers. If the user enters anything other than a valid number catch it with a try/except. The autograder will provide the sequence of inputs (including an invalid value and <code>done</code>); match the desired output.",
         "checks": {
             "input": "You must prompt for the numbers using the input() function.",
             "print": "You must use the print function to print the output.",
@@ -238,7 +238,7 @@ EXERCISES = [
         "desired2": None,
         "starter": '# Use words.txt as the file name\nfname = input("Enter file name: ")\nfh = open(fname)\n',
         "solution": '# Use words.txt as the file name\nfname = input("Enter file name: ")\nfh = open(fname)\ntext = fh.read().strip()\nprint(text.upper())\n',
-        "prompt": '<b>7.1</b> Write a program that prompts for a file name, then opens that file and reads through the file, and print the contents of the file in upper case. Use the file <b>words.txt</b>.',
+        "prompt": '<b>7.1</b> Write a program that prompts for a file name, then opens that file and reads through the file, and print the contents of the file in upper case. The autograder will provide the file name <b>words.txt</b> as input.',
         "checks": {
             "input": "You must prompt for the file name using the input() function.",
             "open": "You need to use open() to open the file.",
@@ -259,7 +259,7 @@ EXERCISES = [
         "desired2": None,
         "starter": '# Use the file name mbox-short.txt as the file name\nfname = input("Enter file name: ")\nfh = open(fname)\nfor line in fh:\n    if not line.startswith("X-DSPAM-Confidence:"):\n        continue\n    print(line)\nprint("Done")\n',
         "solution": '# Use the file name mbox-short.txt as the file name\nfname = input("Enter file name: ")\nfh = open(fname)\ntot = 0.0\ncount = 0\nfor line in fh:\n    if not line.startswith("X-DSPAM-Confidence:") : continue\n    words = line.split()\n    tot = tot + float(words[1])\n    count = count + 1\nprint("Average spam confidence:", tot/count)\n',
-        "prompt": "<b>7.2</b> Write a program that prompts for a file name, then opens that file and reads through the file, looking for lines of the form X-DSPAM-Confidence: 0.8475. Count these lines and compute the average. Do not use the sum() function. Enter <b>mbox-short.txt</b> as the file name.",
+        "prompt": "<b>7.2</b> Write a program that prompts for a file name, then opens that file and reads through the file, looking for lines of the form X-DSPAM-Confidence: 0.8475. Count these lines and compute the average. Do not use the sum() function. The autograder will provide the file name <b>mbox-short.txt</b> as input.",
         "checks": {
             "input": "You must prompt for the file name using the input() function.",
             "open": "You need to use open() to open the file.",
@@ -281,7 +281,7 @@ EXERCISES = [
         "desired2": None,
         "starter": "fname = input(\"Enter file name: \")\nfh = open(fname)\nlst = list()\nfor line in fh:\nprint(line.rstrip())\n",
         "solution": "fname = input(\"Enter file name: \")\nfh = open(fname)\nlst = list()\nfor line in fh:\n    words = line.split()\n    for word in words:\n        if word in lst: continue\n        lst.append(word)\nlst.sort()\nprint(lst)\n",
-        "prompt": "<b>8.4</b> Open the file <b>romeo.txt</b> and read it line by line. For each line, split the line into a list of words. Build a list of unique words, then sort and print the resulting words.",
+        "prompt": "<b>8.4</b> Prompt for a file name (the autograder will provide <b>romeo.txt</b>), open that file, and read it line by line. For each line, split the line into a list of words. Build a list of unique words, then sort and print the resulting words.",
         "checks": {
             "split": "You should use split() to break each line into words.",
             "append": "You should use append() to add the word to the list if it is not there.",
@@ -306,7 +306,7 @@ EXERCISES = [
         "desired2": None,
         "starter": 'fname = input("Enter file name: ")\nif len(fname) < 1:\n    fname = "mbox-short.txt"\n\nfh = open(fname)\ncount = 0\n\nprint("There were", count, "lines in the file with From as the first word")\n',
         "solution": 'fname = input("Enter file name: ")\nif len(fname) < 1 : fname = "mbox-short.txt"\n\nfh = open(fname)\ncount = 0\nfor line in fh:\n    wds = line.split()\n    if len(wds) < 2 : continue\n    if wds[0] != "From" : continue\n    print(wds[1])\n    count = count + 1\nprint("There were", count, "lines in the file with From as the first word")\n',
-        "prompt": "<b>8.5</b> Open the file <b>mbox-short.txt</b> and read it line by line. When you find a line that starts with 'From ' parse it with split() and print the second word (email address). Then print a count at the end.",
+        "prompt": "<b>8.5</b> Prompt for a file name (the autograder will provide <b>mbox-short.txt</b>), open that file, and read it line by line. When you find a line that starts with 'From ' parse it with split() and print the second word (email address). Then print a count at the end.",
         "checks": {
             "for": "You need a for loop to read the lines in the file.",
             "split": "You should use split() to break each line into words.",
@@ -326,7 +326,7 @@ EXERCISES = [
         "desired2": None,
         "starter": 'name = input("Enter file:")\nif len(name) < 1:\n    name = "mbox-short.txt"\nhandle = open(name)\n',
         "solution": 'name = input("Enter file:")\nif len(name) < 1 : name = "mbox-short.txt"\nhandle = open(name)\ncounts = dict()\nfor line in handle:\n    wds = line.split()\n    if len(wds) < 2 : continue\n    if wds[0] != "From" : continue\n    email = wds[1]\n    counts[email] = counts.get(email,0) + 1\n\nbigcount = None\nbigname = None\nfor name,count in counts.items():\n    if bigname is None or count > bigcount:\n        bigname = name\n        bigcount = count\n\nprint(bigname, bigcount)\n',
-        "prompt": "<b>9.4</b> Write a program to read through <b>mbox-short.txt</b> and figure out who has sent the greatest number of mail messages. Build a dictionary of counts and find the most prolific sender.",
+        "prompt": "<b>9.4</b> Write a program that prompts for a file name (the autograder will provide <b>mbox-short.txt</b>), reads the file, and figures out who has sent the greatest number of mail messages. Build a dictionary of counts and find the most prolific sender.",
         "checks": {
             "for": "You need a for loop to read the lines in the file.",
             "split": "You should use split() to break each line into words.",
@@ -347,7 +347,7 @@ EXERCISES = [
         "desired2": None,
         "starter": 'name = input("Enter file:")\nif len(name) < 1:\n    name = "mbox-short.txt"\nhandle = open(name)\n',
         "solution": 'name = input("Enter file:")\nif len(name) < 1 : name = "mbox-short.txt"\nhandle = open(name)\ncounts = dict()\nfor line in handle:\n    wds = line.split()\n    if len(wds) < 6 : continue\n    if wds[0] != "From" : continue\n    when = wds[5]\n    tics = when.split(":")\n    if len(tics) != 3 : continue\n    hour = tics[0]\n    counts[hour] = counts.get(hour,0) + 1\n\nfor key, val in sorted(counts.items()):\n    print(key, val)\n',
-        "prompt": "<b>10.2</b> Write a program to read through <b>mbox-short.txt</b> and figure out the distribution by hour of the day for each of the messages. Pull the hour from the 'From ' line, count by hour, and print counts sorted by hour.",
+        "prompt": "<b>10.2</b> Write a program that prompts for a file name (the autograder will provide <b>mbox-short.txt</b>), reads the file, and figures out the distribution by hour of the day for each of the messages. Pull the hour from the 'From ' line, count by hour, and print counts sorted by hour.",
         "checks": {
             "for": "You need a for loop to read the lines in the file.",
             "sort": "You need to use a sort (list sort() or sorted()) to order the hours.",
@@ -393,6 +393,197 @@ EXERCISES = [
         "timeout_ms": 10000,
     },
 ]
+
+# Udemy Plan-exercise "learning objective" text (plain string, pasteable).
+LEARNING_OBJECTIVES = {
+    "Hello": (
+        "Use Python's print() function to display a simple greeting string."
+    ),
+    "Loop": (
+        "Use a for loop with range() to print a short sequence of integers."
+    ),
+    "Exercise22": (
+        "Read a name with input() and print a personalized Hello greeting."
+    ),
+    "Exercise23": (
+        "Convert input strings to numbers with float() and compute gross pay."
+    ),
+    "Exercise31": (
+        "Use if/else to pay overtime (1.5x) for hours worked above 40."
+    ),
+    "Exercise33": (
+        "Map a numeric score to a letter grade using if/elif/else."
+    ),
+    "Exercise46": (
+        "Put overtime pay logic in a computepay() function that returns the result."
+    ),
+    "Exercise52": (
+        "Loop until a sentinel value, track min and max, and catch invalid input with try/except."
+    ),
+    "Exercise65": (
+        "Extract a number from a string with find() and slicing, then convert it with float()."
+    ),
+    "FileOpen": (
+        "Open a text file and count its lines using a for loop."
+    ),
+    "Exercise71": (
+        "Open a user-chosen file and print its entire contents in uppercase."
+    ),
+    "Exercise72": (
+        "Scan a mailbox file for confidence lines and compute their average without sum()."
+    ),
+    "Exercise84": (
+        "Build a sorted list of unique words from a text file using split() and append()."
+    ),
+    "Exercise85": (
+        "Parse email addresses from mailbox From lines and print a final count."
+    ),
+    "Exercise94": (
+        "Use a dictionary to count senders and find the most prolific email address."
+    ),
+    "Exercise102": (
+        "Count messages by hour of day and print the distribution sorted by hour."
+    ),
+    "Exercise111": (
+        "Write a tiny program that prints the Answer to Life, the Universe, and Everything."
+    ),
+    "Exercise119": (
+        "Count lines in a mailbox file that match a regular expression with re.search()."
+    ),
+}
+
+# Udemy learner-facing Hint field (one short nudge; not the full solution).
+HINTS = {
+    "Hello": (
+        "Look carefully at the starter: print is misspelled. Fix the function name and keep the quoted string."
+    ),
+    "Loop": (
+        "range(3) is not a list of printed lines — loop over it with for and print each value."
+    ),
+    "Exercise22": (
+        "Call input() to get the name, then print('Hello', name) so the entered name appears in the greeting."
+    ),
+    "Exercise23": (
+        "Read hours and rate with input(), convert both with float(), multiply, then print Pay: and the result."
+    ),
+    "Exercise31": (
+        "If hours are over 40, pay the first 40 at the normal rate and the rest at 1.5 times the rate."
+    ),
+    "Exercise33": (
+        "Convert the score with float(), reject values outside 0.0–1.0, then use if/elif for A–F thresholds."
+    ),
+    "Exercise46": (
+        "Move the overtime math into def computepay(h, r): and return the pay; call it from the main code."
+    ),
+    "Exercise52": (
+        "Keep looping until the user types done. Use try/except around int(), and update largest/smallest as you go."
+    ),
+    "Exercise65": (
+        "Find the colon with find(':'), slice after it, strip spaces, then float() and print the number."
+    ),
+    "FileOpen": (
+        "open() the file, count each line in a for loop, then print the count and the word Lines."
+    ),
+    "Exercise71": (
+        "After opening the file, read the text, call .upper(), and print it (strip trailing newlines if needed)."
+    ),
+    "Exercise72": (
+        "Skip lines that do not start with X-DSPAM-Confidence:, float the second word, and average total/count."
+    ),
+    "Exercise84": (
+        "Split each line into words; append a word only if it is not already in the list; sort before printing."
+    ),
+    "Exercise85": (
+        "For lines whose first word is From, print the second word (the email) and count those lines."
+    ),
+    "Exercise94": (
+        "Count From addresses in a dictionary, then loop through items to find the email with the highest count."
+    ),
+    "Exercise102": (
+        "From each From line, take the time field, split on ':', count by hour, then print sorted(hour, count)."
+    ),
+    "Exercise111": (
+        "Douglas Adams fans know the answer is 6 * 7 — print that product."
+    ),
+    "Exercise119": (
+        "import re, open mbox-short.txt, and use re.search(r'^From ', line) inside your counting loop."
+    ),
+}
+
+# Udemy Solution explanation (shown after the learner finishes / reveals the solution).
+SOLUTION_EXPLANATIONS = {
+    "Hello": (
+        "The fix is a one-character typo: rename prinq to print so Python calls the built-in "
+        "print function with the string hello world."
+    ),
+    "Loop": (
+        "range(3) produces the values 0, 1, and 2. A for loop visits each value and print "
+        "writes it on its own line."
+    ),
+    "Exercise22": (
+        "input() reads the name as a string. Passing that string to print with Hello "
+        "builds the welcome line without hard-coding the person's name."
+    ),
+    "Exercise23": (
+        "Hours and rate arrive as strings from input(). float() converts them so you can "
+        "multiply, then print labels the result as Pay:."
+    ),
+    "Exercise31": (
+        "Regular hours are paid at the hourly rate. Hours above 40 are paid at 1.5 times "
+        "the rate; an if/else chooses which formula to use."
+    ),
+    "Exercise33": (
+        "After converting the score to a float and checking the 0.0–1.0 range, chained "
+        "if/elif/else tests pick the matching letter grade from high to low."
+    ),
+    "Exercise46": (
+        "computepay(h, r) hides the overtime math and returns the pay. The main program "
+        "only reads input, converts values, calls the function, and prints the result."
+    ),
+    "Exercise52": (
+        "A while loop reads numbers until done. try/except skips bad input, and you "
+        "update running largest and smallest values before printing both."
+    ),
+    "Exercise65": (
+        "find(':') locates the separator. Slicing after that position, stripping spaces, "
+        "and calling float() yields the confidence number to print."
+    ),
+    "FileOpen": (
+        "open() gives a file handle. Each iteration of for line in fh: is one line; "
+        "increment a counter and print the total with Lines."
+    ),
+    "Exercise71": (
+        "Prompt for the file name, open it, read the text, convert with upper(), and "
+        "print so every character appears in uppercase."
+    ),
+    "Exercise72": (
+        "Only X-DSPAM-Confidence: lines contribute. Convert the numeric token with float(), "
+        "accumulate a total and count, then print total/count as the average."
+    ),
+    "Exercise84": (
+        "split() breaks each line into words. Append a word only when it is new, then "
+        "sort() the list so the unique vocabulary prints in order."
+    ),
+    "Exercise85": (
+        "Lines that begin with From have the email in the second column. Print each "
+        "address and keep a count for the final summary line."
+    ),
+    "Exercise94": (
+        "A dictionary maps each From address to how often it appears. After counting, "
+        "scan the items to find the address with the largest count."
+    ),
+    "Exercise102": (
+        "The time token on a From line splits into hour:minute:second. Count by hour "
+        "in a dictionary, then print the hours in sorted order with their counts."
+    ),
+    "Exercise111": (
+        "The joke answer from The Hitchhiker's Guide is 42, which is just 6 * 7 printed."
+    ),
+    "Exercise119": (
+        "re.search(r'^From ', line) is true when a line starts with From followed by a "
+        "space. Counting those matches reports how many such lines the file contains."
+    ),
+}
 
 
 _SYMBOL_NAMES = {
@@ -502,12 +693,13 @@ def build_evaluation(ex: dict) -> tuple[str, dict]:
             "class SourceTests(unittest.TestCase):\n"
             "    @classmethod\n"
             "    def setUpClass(cls):\n"
-            "        with open('student.py', encoding='utf-8') as f:\n"
+            "        with open(student_file(), encoding='utf-8') as f:\n"
             "            cls.src = f.read()\n"
             "\n" + "\n".join(check_methods)
         )
 
     evaluation = f'''import io
+import os
 import runpy
 import sys
 import unittest
@@ -518,12 +710,20 @@ DESIRED2 = {desired2_repr}
 STDIN = {stdin_repr}
 
 
+def student_file():
+    """PythonGrader uses student.py; Udemy coding exercises use exercise.py."""
+    for name in ('student.py', 'exercise.py'):
+        if os.path.isfile(name):
+            return name
+    return 'student.py'
+
+
 def run_student(stdin=STDIN):
     output = io.StringIO()
     with patch('builtins.input', side_effect=_input_side_effect(stdin)):
         with patch('sys.stdout', output):
             try:
-                runpy.run_path('student.py', run_name='__main__')
+                runpy.run_path(student_file(), run_name='__main__')
             except SystemExit:
                 pass
     return output.getvalue()
@@ -604,6 +804,12 @@ def main():
             }
             for name in ex["assets"]
         ]
+        objective = ex.get("learning_objective") or LEARNING_OBJECTIVES.get(ex["key"])
+        hint = ex.get("hint") or HINTS.get(ex["key"])
+        explanation = (
+            ex.get("solution_explanation")
+            or SOLUTION_EXPLANATIONS.get(ex["key"])
+        )
         assignment = {
             "type": "pythongrader",
             "schema_version": 1,
@@ -611,6 +817,9 @@ def main():
             "assignment_version": 1,
             "title": ex["title"],
             "prompt": f"<p>{ex['prompt']}</p>",
+            "learning_objective": objective,
+            "hint": hint,
+            "solution_explanation": explanation,
             "files": {
                 "student.py": {
                     "mode": "editable",
@@ -636,6 +845,12 @@ def main():
             "exports": {"udemy": {"enabled": True}},
             "py4e_exercise": ex["py4e"],
         }
+        if not objective:
+            print(f"WARNING: missing learning_objective for {ex['key']}")
+        if not hint:
+            print(f"WARNING: missing hint for {ex['key']}")
+        if not explanation:
+            print(f"WARNING: missing solution_explanation for {ex['key']}")
         if ex.get("allow_passing_starter"):
             assignment["authoring"] = {"allow_passing_starter": True}
 

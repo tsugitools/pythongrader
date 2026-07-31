@@ -4,7 +4,10 @@
   "id": "files-file-open-001",
   "assignment_version": 1,
   "title": "Open and Count Lines",
-  "prompt": "<p>Write a program that opens <b>mbox-short.txt</b> and counts the number of lines in the file. For example, the output should be: <code>1910 Lines</code>.</p>",
+  "prompt": "<p>This Python program opens the file \"mbox-short.txt\" and counts the number of lines in the file.</p>",
+  "learning_objective": "Open a text file and count its lines using a for loop.",
+  "hint": "open() the file, count each line in a for loop, then print the count and the word Lines.",
+  "solution_explanation": "open() gives a file handle. Each iteration of for line in fh: is one line; increment a counter and print the total with Lines.",
   "files": {
     "student.py": {
       "mode": "editable",
@@ -18,13 +21,13 @@
   },
   "evaluation": {
     "filename": "evaluation.py",
-    "source": "import io\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"1910 Lines\"\nDESIRED2 = None\nSTDIN = \"\"\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path('student.py', run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open('student.py', encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_open(self):\n        self.assertIn(\"open\", self.src,\n            \"You need to use open() to open the file.\")\n\n    def test_source_for(self):\n        self.assertIn(\"for\", self.src,\n            \"You need a for loop to read the lines in the file.\")\n\n",
+    "source": "import io\nimport os\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"1910 Lines\"\nDESIRED2 = None\nSTDIN = \"\"\n\n\ndef student_file():\n    \"\"\"PythonGrader uses student.py; Udemy coding exercises use exercise.py.\"\"\"\n    for name in ('student.py', 'exercise.py'):\n        if os.path.isfile(name):\n            return name\n    return 'student.py'\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path(student_file(), run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open(student_file(), encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_open(self):\n        self.assertIn(\"open\", self.src,\n            \"You need to use open() to open the file.\")\n\n    def test_source_for(self):\n        self.assertIn(\"for\", self.src,\n            \"You need a for loop to read the lines in the file.\")\n\n",
     "tests": {
       "OutputTests.test_desired_output": {
-        "title": "Matches expected output",
+        "title": "Matches desired output",
         "group": "Output",
         "points": 8,
-        "feedback": "Compare your program output carefully to the example in the assignment description."
+        "feedback": "Compare your program output carefully to the Desired Output."
       },
       "SourceTests.test_source_open": {
         "title": "Source check: require 'open'",
