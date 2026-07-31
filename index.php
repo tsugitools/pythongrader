@@ -42,6 +42,8 @@ if ($mode !== 'author') {
 if ($mode === 'author' && !$isInstructor) {
     $mode = 'learner';
 }
+// Undocumented: ?a11y=1 shows live-region announcements on screen (a11y smoke test).
+$a11yDebug = U::get($_GET, 'a11y') === '1' || U::get($_GET, 'a11y') === 'true';
 
 $loaded = pythongrader_load_exercise(isset($LINK) ? $LINK : null);
 $exercise = $loaded['exercise'];
@@ -79,13 +81,13 @@ if ($isInstructor) {
 ?>
 <header class="topbar">
     <div class="topbar-left">
-        <span class="brand">PythonGrader</span>
+        <span class="brand" aria-hidden="true">PythonGrader</span>
         <span id="exerciseTitle" class="exercise-title"></span>
     </div>
     <div class="topbar-right">
 <?php if ($isInstructor) : ?>
-        <a class="btn btn-ghost<?php echo $mode === 'learner' ? ' pg-nav-current' : ''; ?>" href="<?php echo addSession('index.php'); ?>">Learner</a>
-        <a class="btn btn-ghost<?php echo $mode === 'author' ? ' pg-nav-current' : ''; ?>" href="<?php echo addSession('index.php?mode=author'); ?>">Edit</a>
+        <a class="btn btn-ghost<?php echo $mode === 'learner' ? ' pg-nav-current' : ''; ?>" href="<?php echo addSession('index.php'); ?>"<?php echo $mode === 'learner' ? ' aria-current="page"' : ''; ?>>Learner</a>
+        <a class="btn btn-ghost<?php echo $mode === 'author' ? ' pg-nav-current' : ''; ?>" href="<?php echo addSession('index.php?mode=author'); ?>"<?php echo $mode === 'author' ? ' aria-current="page"' : ''; ?>>Edit</a>
 <?php endif; ?>
         <a class="btn btn-ghost" href="documentation.html" target="_blank" rel="noopener noreferrer" title="Help">Help</a>
 <?php if ($isInstructor) : ?>
@@ -95,6 +97,9 @@ if ($isInstructor) {
     </div>
 </header>
 
+<h1 class="sr-only" id="page-heading">PythonGrader</h1>
+<div id="a11y-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
 <main id="app"></main>
 
 <script>
@@ -102,6 +107,7 @@ window.PYTHONGRADER = {
     mode: <?php echo json_encode($mode); ?>,
     isInstructor: <?php echo $isInstructor ? 'true' : 'false'; ?>,
     hasLink: <?php echo $hasLink ? 'true' : 'false'; ?>,
+    a11yDebug: <?php echo $a11yDebug ? 'true' : 'false'; ?>,
     assignmentKey: <?php echo json_encode($assignmentKey); ?>,
     assignments: <?php echo json_encode($assignments); ?>,
     exercise: <?php echo json_encode($exercise, $jsonFlags); ?>,

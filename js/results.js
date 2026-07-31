@@ -12,18 +12,44 @@
             .replace(/"/g, '&quot;');
     }
 
+    function studentFacingError(msg) {
+        if (!msg) return '';
+        var parts = [];
+        if (msg.stderr) {
+            var stderr = String(msg.stderr).trim();
+            if (stderr) parts.push(stderr);
+        }
+        if (msg.exception) {
+            var type = msg.exception.type || 'Exception';
+            var message = msg.exception.message || '';
+            var headline = (type + ': ' + message).trim();
+            if (headline) parts.push(headline);
+
+            var tbLines = String(msg.exception.traceback || '').split('\n');
+            var keep = false;
+            var loc = [];
+            tbLines.forEach(function (line) {
+                if (line.indexOf('  File ') === 0) {
+                    keep = line.indexOf('student.py') !== -1
+                        || line.indexOf('evaluation.py') !== -1;
+                    if (keep) loc.push(line);
+                    return;
+                }
+                if (keep) {
+                    // Source context line under the File frame
+                    if (line.indexOf('    ') === 0) loc.push(line);
+                    keep = false;
+                }
+            });
+            if (loc.length) parts.push(loc.join('\n'));
+        }
+        return parts.join('\n').trim();
+    }
+
     function renderRunOutput(stdoutEl, stderrEl, msg) {
         if (stdoutEl) stdoutEl.textContent = (msg && msg.stdout) || '';
         if (!stderrEl) return;
-        var parts = [];
-        if (msg && msg.stderr) parts.push(msg.stderr);
-        if (msg && msg.exception) {
-            parts.push(
-                (msg.exception.type || 'Exception') + ': ' + (msg.exception.message || '')
-            );
-            if (msg.exception.traceback) parts.push(msg.exception.traceback);
-        }
-        var text = parts.join('\n').trim();
+        var text = studentFacingError(msg);
         stderrEl.textContent = text;
         var block = document.getElementById('stderr-block');
         if (block) block.hidden = !text;
@@ -67,6 +93,7 @@
 
     global.PythonGraderResults = {
         renderRunOutput: renderRunOutput,
-        renderGrade: renderGrade
+        renderGrade: renderGrade,
+        studentFacingError: studentFacingError
     };
 })(typeof window !== 'undefined' ? window : self);

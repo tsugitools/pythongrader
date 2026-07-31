@@ -19,11 +19,42 @@ def truncate(text: Optional[str], limit: int) -> str:
     return text[: limit - 20] + "\n... [truncated]"
 
 
+def sanitize_traceback(tb: str) -> str:
+    """Keep student/evaluation frames; drop harness/runpy/<exec> frames."""
+    if not tb:
+        return ""
+    lines = tb.splitlines()
+    out: list[str] = []
+    keep_block = False
+    kept_student_frame = False
+    for line in lines:
+        if line.startswith("Traceback"):
+            out.append(line)
+            keep_block = False
+            continue
+        if line.startswith("  File "):
+            keep_block = ("student.py" in line) or ("evaluation.py" in line)
+            if keep_block:
+                kept_student_frame = True
+                out.append(line)
+            continue
+        if keep_block:
+            out.append(line)
+            continue
+        # Final exception line (e.g. NameError: ...)
+        if line and not line.startswith(" "):
+            out.append(line)
+    if not kept_student_frame:
+        return tb
+    return "\n".join(out)
+
+
 def format_exception(exc: BaseException) -> dict[str, str]:
     """Return a sanitized exception payload for the browser."""
     tb = "".join(
         traceback.format_exception(type(exc), exc, exc.__traceback__)
     )
+    tb = sanitize_traceback(tb)
     return {
         "type": type(exc).__name__,
         "message": truncate(str(exc), MAX_MESSAGE_CHARS),

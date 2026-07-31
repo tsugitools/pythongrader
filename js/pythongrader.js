@@ -39,8 +39,92 @@
     }
 
     function setTitle() {
+        var title = exercise.title || 'Python exercise';
         var t = $('#exerciseTitle');
-        if (t) t.textContent = exercise.title || '';
+        if (t) t.textContent = title;
+        var h = $('#page-heading');
+        if (h) h.textContent = 'PythonGrader: ' + title;
+    }
+
+    // Screen-reader announcements: visual #status is aria-hidden; speech goes
+    // through #a11y-status (same pattern as pythonauto).
+    // With ?a11y=1, also speak via speechSynthesis so you can hear without VoiceOver.
+    function speakA11yDebug(msg) {
+        if (!cfg.a11yDebug || !msg || typeof window.speechSynthesis === 'undefined') return;
+        try {
+            window.speechSynthesis.cancel();
+            var u = new SpeechSynthesisUtterance(msg);
+            u.rate = 1.05;
+            window.speechSynthesis.speak(u);
+        } catch (e) { /* ignore */ }
+    }
+
+    function announceStatus(msg) {
+        var el = $('#a11y-status');
+        if (!el) return;
+        el.textContent = '';
+        setTimeout(function () {
+            el.textContent = msg || '';
+            speakA11yDebug(msg);
+        }, 50);
+    }
+
+    function getOutputSummary(maxLen) {
+        maxLen = maxLen || 280;
+        var stdout = ($('#stdout') && ($('#stdout').innerText || $('#stdout').textContent)) || '';
+        var text = String(stdout).replace(/\s+/g, ' ').trim();
+        if (!text) return 'Your output is empty.';
+        if (text.length > maxLen) text = text.substring(0, maxLen) + '…';
+        return 'Your output updated. ' + text;
+    }
+
+    function getRunErrorSummary(msg, maxLen) {
+        maxLen = maxLen || 280;
+        var text = '';
+        if (Results.studentFacingError) {
+            text = Results.studentFacingError(msg);
+        } else if (msg && msg.exception) {
+            text = (msg.exception.type || 'Error') + ': ' + (msg.exception.message || '');
+        } else if (msg && msg.stderr) {
+            text = String(msg.stderr);
+        }
+        text = text.replace(/\s+/g, ' ').trim();
+        if (!text) return 'Run finished with errors.';
+        if (text.length > maxLen) text = text.substring(0, maxLen) + '…';
+        return 'Run finished with errors. ' + text;
+    }
+
+    function getGradeSummary(msg) {
+        if (!msg) return '';
+        if (msg.status === 'grader_error') {
+            return 'Grader error. ' + ((msg.message || '').replace(/\s+/g, ' ').trim());
+        }
+        var earned = msg.earned || 0;
+        var possible = msg.possible || 0;
+        var tests = msg.tests || [];
+        var failed = tests.filter(function (t) {
+            return t.status !== 'pass' && t.status !== 'skip';
+        });
+        var parts = ['Score ' + earned + ' of ' + possible + '.'];
+        if (!tests.length) {
+            parts.push('No tests reported.');
+        } else if (!failed.length) {
+            parts.push('All tests passed.');
+        } else {
+            parts.push(failed.length + ' test' + (failed.length === 1 ? '' : 's') + ' not passed.');
+            var first = failed[0];
+            parts.push('First issue: ' + (first.title || first.id || 'test') + '.');
+        }
+        return parts.join(' ');
+    }
+
+    function setPanelsBusy(isBusy) {
+        ['stdout', 'stderr', 'results'].forEach(function (id) {
+            var el = $('#' + id);
+            if (!el) return;
+            if (isBusy) el.setAttribute('aria-busy', 'true');
+            else el.removeAttribute('aria-busy');
+        });
     }
 
     function starterSource() {
@@ -244,11 +328,15 @@
         }, 800);
     }
 
-    function setStatus(state, text) {
+    function setStatus(state, text, announceMsg) {
         var s = $('#status');
-        if (!s) return;
-        s.dataset.state = state || '';
-        s.textContent = text || state || '';
+        var msg = text || state || '';
+        if (s) {
+            s.dataset.state = state || '';
+            s.textContent = msg;
+        }
+        // Optional richer SR message; default to the visible status text.
+        announceStatus(announceMsg != null ? announceMsg : msg);
     }
 
     function autosizeTextarea(ta) {
@@ -266,6 +354,7 @@
         if (run) run.disabled = busy || !(runtime && runtime.isReady());
         updateGradeButton();
         if (busy && grade) grade.disabled = true;
+        setPanelsBusy(busy);
     }
 
     function updateGradeButton() {
@@ -330,8 +419,12 @@
 
     function doRun() {
         if (!runtime || busy) return;
+        if (!getStudentSource().trim()) {
+            setStatus('fail', 'You do not have any Python code.');
+            return;
+        }
         setBusy(true);
-        setStatus('running', 'Running…');
+        setStatus('running', 'Running…', 'Running your code.');
         Results.renderGrade($('#score'), $('#results'), null);
         runtime
             .run(
@@ -342,7 +435,13 @@
             )
             .then(function (msg) {
                 Results.renderRunOutput($('#stdout'), $('#stderr'), msg);
-                setStatus('complete', 'Run complete (' + (msg.duration_ms || 0) + ' ms)');
+                var visual = 'Run complete (' + (msg.duration_ms || 0) + ' ms)';
+                var hasErr = !!(msg && ((msg.stderr && String(msg.stderr).trim()) || msg.exception));
+                setStatus(
+                    hasErr ? 'fail' : 'complete',
+                    visual,
+                    hasErr ? getRunErrorSummary(msg) : ('Execution complete. ' + getOutputSummary())
+                );
                 scheduleAutosave();
                 setBusy(false);
             })
@@ -352,7 +451,11 @@
                         stdout: '',
                         stderr: err.message
                     });
-                    setStatus('timeout', 'Timed out — restarting worker…');
+                    setStatus(
+                        'timeout',
+                        'Timed out — restarting worker…',
+                        'Timed out. ' + getOutputSummary() + ' Restarting worker.'
+                    );
                     var recovered = err.recovered || Promise.resolve();
                     recovered
                         .then(function () {
@@ -371,7 +474,11 @@
                     stdout: '',
                     stderr: (err && err.message) || String(err)
                 });
-                setStatus('worker_error', 'Run failed');
+                setStatus(
+                    'worker_error',
+                    'Run failed',
+                    'Error running code. ' + getOutputSummary()
+                );
                 setBusy(false);
                 updateGradeButton();
             });
@@ -383,7 +490,7 @@
             return;
         }
         setBusy(true);
-        setStatus('running', 'Grading…');
+        setStatus('running', 'Grading…', 'Grading your code.');
         runtime
             .grade(
                 getStudentSource(),
@@ -396,9 +503,10 @@
             .then(function (msg) {
                 Results.renderRunOutput($('#stdout'), $('#stderr'), msg);
                 Results.renderGrade($('#score'), $('#results'), msg);
+                var gradeSpeech = getGradeSummary(msg);
 
                 if (msg.status === 'grader_error') {
-                    setStatus('grader_error', 'Grader error');
+                    setStatus('grader_error', 'Grader error', gradeSpeech);
                     setBusy(false);
                     return;
                 }
@@ -408,8 +516,11 @@
                 var grade = possible > 0 ? earned / possible : 0;
 
                 if (!cfg.hasLink || !cfg.urls || !cfg.urls.gradeSubmit) {
-                    setStatus('success', 'Score: ' + earned + '/' + possible
-                        + ' (not submitted — no LTI placement)');
+                    setStatus(
+                        'success',
+                        'Score: ' + earned + '/' + possible + ' (not submitted — no LTI placement)',
+                        gradeSpeech + ' Grade not submitted — no LTI placement.'
+                    );
                     setBusy(false);
                     return;
                 }
@@ -419,11 +530,18 @@
                 saveStudentSource(null);
                 return submitGrade(grade).then(function (resp) {
                     if (resp.ok || (resp.body && resp.body.status === 'success')) {
-                        setStatus('success', 'Grade submitted: ' + earned + '/' + possible);
+                        setStatus(
+                            'success',
+                            'Grade submitted: ' + earned + '/' + possible,
+                            'Grade updated on server. ' + gradeSpeech
+                        );
                     } else {
                         var detail = (resp.body && (resp.body.detail || resp.body.status)) || 'submit failed';
-                        setStatus('success', 'Scored ' + earned + '/' + possible
-                            + ' — grade note: ' + detail);
+                        setStatus(
+                            'success',
+                            'Scored ' + earned + '/' + possible + ' — grade note: ' + detail,
+                            gradeSpeech + ' Error storing grade on server: ' + detail
+                        );
                     }
                     setBusy(false);
                 });
@@ -444,7 +562,11 @@
                             feedback: ''
                         }]
                     });
-                    setStatus('timeout', 'Timed out — restarting worker…');
+                    setStatus(
+                        'timeout',
+                        'Timed out — restarting worker…',
+                        'Grading timed out. Restarting worker.'
+                    );
                     var recovered = err.recovered || Promise.resolve();
                     recovered
                         .then(function () {
@@ -480,7 +602,11 @@
         Results.renderGrade($('#score'), $('#results'), null);
         clearLocalBackup();
         saveStudentSource(function () {
-            setStatus('pending', 'Reset to starter code');
+            setStatus(
+                'pending',
+                'Reset to starter code',
+                'Code reset to the assignment starter.'
+            );
             updateGradeButton();
         });
         updateGradeButton();
@@ -496,7 +622,11 @@
         if (!window.confirm('Load the reference solution into the editor?')) return;
         setStudentSource(sol);
         onEdit();
-        setStatus('pending', 'Solution loaded — Run before Grade');
+        setStatus(
+            'pending',
+            'Solution loaded — Run before Grade',
+            'Reference solution loaded into the editor. Run before grading.'
+        );
     }
 
     function renderLearner() {
@@ -504,53 +634,83 @@
         app.innerHTML = '';
 
         var left = el('div', { className: 'learner-left' }, [
-            el('section', { className: 'prompt-block' }, [
-                el('div', { className: 'prompt', html: exercise.prompt || '' })
+            el('section', {
+                className: 'prompt-block',
+                role: 'region',
+                'aria-label': 'Assignment instructions'
+            }, [
+                el('div', { className: 'prompt', id: 'exercise-prompt', html: exercise.prompt || '' })
             ]),
-            el('div', { className: 'toolbar' }, [
+            el('div', { className: 'toolbar', role: 'toolbar', 'aria-label': 'Code actions' }, [
                 el('button', { type: 'button', className: 'btn btn-primary', id: 'btnRun', text: 'Run / Restart' }),
                 el('button', { type: 'button', className: 'btn', id: 'btnGrade', text: 'Grade', disabled: 'disabled' }),
                 el('button', { type: 'button', className: 'btn', id: 'btnReset', text: 'Reset' }),
                 cfg.isInstructor
                     ? el('button', { type: 'button', className: 'btn', id: 'btnSolution', text: 'Load solution' })
                     : null,
-                el('span', { id: 'status', 'data-state': 'loading', 'aria-live': 'polite', text: 'Loading Python…' })
+                // Visual status only — SR announcements go through #a11y-status
+                el('span', {
+                    id: 'status',
+                    'data-state': 'loading',
+                    'aria-hidden': 'true',
+                    text: 'Loading Python…'
+                })
             ]),
-            el('p', { id: 'dirtyNote', className: 'dirty-note' }),
+            el('p', { id: 'dirtyNote', className: 'dirty-note', 'aria-live': 'polite' }),
             el('div', { className: 'student-editor-wrap', id: 'student-editor-wrap' }, [
                 el('textarea', {
                     id: 'student-source',
                     className: 'code student-source',
                     rows: '18',
                     spellcheck: 'false',
-                    'aria-label': 'Student Python source'
+                    'aria-label': 'Python code editor'
                 })
             ])
         ]);
 
         var right = el('div', { className: 'learner-right' }, [
             el('section', { className: 'panel panel-stdin' }, [
-                el('label', { for: 'stdin', text: 'Standard Input (stdin)' }),
+                el('label', { for: 'stdin', id: 'stdin-label', text: 'Standard Input (stdin)' }),
                 el('textarea', {
                     id: 'stdin',
                     className: 'code stdin-autosize',
                     rows: '1',
                     spellcheck: 'false',
-                    'aria-label': 'Standard Input (stdin)'
+                    'aria-labelledby': 'stdin-label'
                 })
             ]),
-            el('section', { className: 'panel' }, [
-                el('label', { for: 'stdout', text: 'Standard Output (stdout)' }),
-                el('pre', { id: 'stdout', className: 'output', tabindex: '0' }),
+            el('section', {
+                className: 'panel',
+                role: 'region',
+                'aria-labelledby': 'stdout-label'
+            }, [
+                el('label', { for: 'stdout', id: 'stdout-label', text: 'Standard Output (stdout)' }),
+                el('pre', {
+                    id: 'stdout',
+                    className: 'output',
+                    tabindex: '0',
+                    role: 'region',
+                    'aria-labelledby': 'stdout-label'
+                }),
                 el('div', { id: 'stderr-block', hidden: 'hidden' }, [
-                    el('label', { for: 'stderr', text: 'Standard Error (stderr)' }),
-                    el('pre', { id: 'stderr', className: 'output', tabindex: '0' })
+                    el('label', { for: 'stderr', id: 'stderr-label', text: 'Standard Error (stderr)' }),
+                    el('pre', {
+                        id: 'stderr',
+                        className: 'output',
+                        tabindex: '0',
+                        role: 'region',
+                        'aria-labelledby': 'stderr-label'
+                    })
                 ])
             ]),
-            el('section', { className: 'panel' }, [
-                el('h2', { text: 'Test results' }),
-                el('div', { id: 'score', className: 'score' }),
-                el('div', { id: 'results' })
+            el('section', {
+                className: 'panel',
+                role: 'region',
+                'aria-labelledby': 'results-heading'
+            }, [
+                el('h2', { id: 'results-heading', text: 'Test results' }),
+                el('div', { id: 'score', className: 'score', 'aria-live': 'off' }),
+                el('div', { id: 'results', tabindex: '0' })
             ])
         ]);
 
@@ -915,6 +1075,9 @@
 
     function boot() {
         if (!app) return;
+        if (cfg.a11yDebug) {
+            document.body.classList.add('a11y-debug');
+        }
         setTitle();
         if (cfg.mode === 'author' && cfg.isInstructor) {
             renderAuthor();
