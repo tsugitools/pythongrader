@@ -186,8 +186,10 @@ async function runStudent(payload) {
     var stdinText = (payload && payload.stdin) != null ? String(payload.stdin) : '';
     prepareExecution(studentSource, null, payload && payload.assets);
 
+    // Echo input() replies to stdout so Run looks like a terminal:
+    // prompt + typed line + newline. Grade path is unchanged (tests mock input).
     var code = [
-        'import io, sys, json, time, runpy',
+        'import io, sys, json, time, runpy, builtins',
         'from result import format_exception',
         '',
         '_stdout = io.StringIO()',
@@ -196,6 +198,25 @@ async function runStudent(payload) {
         'sys.stdout = _stdout',
         'sys.stderr = _stderr',
         'sys.stdin = _stdin',
+        '',
+        'def _echo_input(prompt=""):',
+        '    if prompt:',
+        '        sys.stdout.write(str(prompt))',
+        '        sys.stdout.flush()',
+        '    line = sys.stdin.readline()',
+        '    if not line:',
+        '        raise EOFError("EOF when reading a line")',
+        '    # Terminal normally echoes keystrokes; StringIO stdin does not.',
+        '    sys.stdout.write(line if line.endswith("\\n") else line + "\\n")',
+        '    sys.stdout.flush()',
+        '    if line.endswith("\\n"):',
+        '        line = line[:-1]',
+        '    if line.endswith("\\r"):',
+        '        line = line[:-1]',
+        '    return line',
+        '',
+        'builtins.input = _echo_input',
+        '',
         '_started = time.perf_counter()',
         '_exc = None',
         'try:',
