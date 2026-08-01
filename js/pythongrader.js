@@ -43,7 +43,15 @@
         var t = $('#exerciseTitle');
         if (t) t.textContent = title;
         var h = $('#page-heading');
-        if (h) h.textContent = 'PythonGrader: ' + title;
+        if (!h) return;
+        if (cfg.mode === 'author' && cfg.isInstructor) {
+            // Visible h1 lives in the author panel; keep this for document title sync only.
+            h.textContent = 'Edit assignment: ' + title;
+            h.setAttribute('aria-hidden', 'true');
+        } else {
+            h.textContent = 'PythonGrader: ' + title;
+            h.removeAttribute('aria-hidden');
+        }
     }
 
     // Screen-reader announcements: visual #status is aria-hidden; speech goes
@@ -350,6 +358,17 @@
             s.textContent = msg;
         }
         // Optional richer SR message; default to the visible status text.
+        announceStatus(announceMsg != null ? announceMsg : msg);
+    }
+
+    /** Status under the Udemy Export tab (not next to Save). */
+    function setUdemyStatus(state, text, announceMsg) {
+        var s = $('#udemy-status');
+        var msg = text || state || '';
+        if (s) {
+            s.dataset.state = state || '';
+            s.textContent = msg;
+        }
         announceStatus(announceMsg != null ? announceMsg : msg);
     }
 
@@ -1059,6 +1078,26 @@
         copyTextToClipboard(html, btn);
     }
 
+    function focusNextUdemyPasteTextarea(fromBtn) {
+        var section = fromBtn && fromBtn.closest
+            ? fromBtn.closest('.udemy-paste-field')
+            : null;
+        if (!section) return;
+        var next = section.nextElementSibling;
+        while (next && !next.classList.contains('udemy-paste-field')) {
+            next = next.nextElementSibling;
+        }
+        if (!next) return;
+        var ta = next.querySelector('textarea.udemy-paste-text');
+        if (!ta) return;
+        try {
+            ta.focus({ preventScroll: true });
+            ta.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } catch (e) {
+            ta.focus();
+        }
+    }
+
     function renderUdemyPasteFields(host, preview) {
         var Export = window.PythonGraderUdemyExport;
         var members = preview && preview.members;
@@ -1066,7 +1105,7 @@
             || (Export && Export.PASTE_FIELDS)
             || [];
         var wrap = el('div', { className: 'udemy-paste', id: 'udemy-paste' });
-        wrap.appendChild(el('h4', { text: 'Copy into Udemy' }));
+        wrap.appendChild(el('h3', { text: 'Copy into Udemy' }));
         wrap.appendChild(el('p', {
             className: 'udemy-paste-help',
             text: 'Paste each field into the matching Udemy coding-exercise box. Title comes first; required data files appear after Solution (create a file with that name in Udemy); Learner file is last. For Instructions, Hint, and Solution explanation, use Copy as Rich Text so Udemy’s editors keep formatting.'
@@ -1082,7 +1121,7 @@
             var heading = field.asset
                 ? ('Required file: ' + field.label)
                 : (field.label + ' (' + field.file + ')');
-            head.appendChild(el('h5', { text: heading }));
+            head.appendChild(el('h4', { text: heading }));
             var isHtml = field.clipboard === 'html';
             var btnCopy = el('button', {
                 type: 'button',
@@ -1095,6 +1134,7 @@
                 } else {
                     copyTextToClipboard(text, btnCopy);
                 }
+                focusNextUdemyPasteTextarea(btnCopy);
             });
             head.appendChild(btnCopy);
             section.appendChild(head);
@@ -1105,9 +1145,15 @@
                 }));
             }
             var lineCount = text.split('\n').length;
+            var compact = field.file === 'title.txt'
+                || field.file === 'learning-objective.txt';
+            var rows = compact
+                ? String(Math.min(3, Math.max(2, lineCount)))
+                : String(Math.min(16, Math.max(4, Math.min(lineCount + 1, 12))));
             section.appendChild(el('textarea', {
-                className: 'code udemy-paste-text',
-                rows: String(Math.min(16, Math.max(4, Math.min(lineCount + 1, 12)))),
+                className: 'code udemy-paste-text'
+                    + (compact ? ' udemy-paste-compact' : ''),
+                rows: rows,
                 readonly: 'readonly',
                 spellcheck: 'false',
                 'aria-label': field.label
@@ -1118,7 +1164,27 @@
             if (ta) ta.value = text;
         });
 
-        host.appendChild(wrap);
+        var status = host.querySelector('.udemy-status');
+        if (status) host.insertBefore(wrap, status);
+        else host.appendChild(wrap);
+    }
+
+    function setUdemyActionButtons(preview) {
+        var btnDl = $('#btnUdemyDownload');
+        var btnClose = $('#btnUdemyClose');
+        if (!btnDl || !btnClose) return;
+        btnDl.disabled = !(preview && preview.ok);
+        btnClose.disabled = !preview;
+    }
+
+    function closeUdemyPanel() {
+        var host = $('#udemy-panel');
+        if (!host) return;
+        host.hidden = true;
+        host.setAttribute('hidden', '');
+        host.innerHTML = '';
+        host.classList.remove('udemy-panel-blocked');
+        setUdemyActionButtons(null);
     }
 
     function renderUdemyPanel(preview) {
@@ -1128,9 +1194,6 @@
         host.removeAttribute('hidden');
         host.innerHTML = '';
         host.classList.toggle('udemy-panel-blocked', !preview.ok);
-        host.appendChild(el('h3', {
-            text: preview.ok ? 'Udemy export — compatible' : 'Udemy export — not exportable'
-        }));
 
         var report = preview.report || {};
         var errors = report.errors || [];
@@ -1148,122 +1211,66 @@
             host.appendChild(errBox);
         }
 
-        host.appendChild(el('pre', { text: preview.markdown || '' }));
-
-        var actions = el('div', { className: 'udemy-actions' });
-        var btnPaste = el('button', {
-            type: 'button',
-            className: 'btn btn-primary',
-            id: 'btnUdemyPaste',
-            text: 'Show copy/paste fields'
-        });
-        var btnDl = el('button', {
-            type: 'button',
-            className: 'btn',
-            id: 'btnUdemyDownload',
-            text: 'Download ZIP'
-        });
-        if (!preview.ok) {
-            btnPaste.disabled = true;
-            btnDl.disabled = true;
-        }
-        var btnClose = el('button', {
-            type: 'button',
-            className: 'btn',
-            text: 'Close'
-        });
-        actions.appendChild(btnPaste);
-        actions.appendChild(btnDl);
-        actions.appendChild(btnClose);
-        host.appendChild(actions);
-
-        btnClose.addEventListener('click', function () {
-            host.hidden = true;
-            host.setAttribute('hidden', '');
-            host.innerHTML = '';
-            host.classList.remove('udemy-panel-blocked');
-        });
-        btnDl.addEventListener('click', function () {
-            authorDownloadUdemyZip();
-        });
-        btnPaste.addEventListener('click', function () {
-            var existing = $('#udemy-paste');
-            if (existing) {
-                existing.hidden = !existing.hidden;
-                btnPaste.textContent = existing.hidden
-                    ? 'Show copy/paste fields'
-                    : 'Hide copy/paste fields';
-                return;
-            }
-            if (!preview.members) {
-                setStatus('error', 'No paste fields available');
-                return;
-            }
-            renderUdemyPasteFields(host, preview);
-            btnPaste.textContent = 'Hide copy/paste fields';
-            setStatus('success', 'Copy each field into Udemy');
-        });
-
-        // Compatible exports: open paste fields by default (ZIP still available).
+        // Paste UI: fields only. Full compatibility report lives in ZIP as COMPATIBILITY.md.
         if (preview.ok && preview.members) {
             renderUdemyPasteFields(host, preview);
-            btnPaste.textContent = 'Hide copy/paste fields';
         }
 
-        try {
-            host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        } catch (e) {
-            host.scrollIntoView(true);
-        }
+        host.appendChild(el('h3', {
+            className: 'udemy-status',
+            text: preview.ok ? 'Udemy export — compatible' : 'Udemy export — not exportable'
+        }));
+
+        setUdemyActionButtons(preview);
     }
 
     function authorExportUdemyPreview() {
         var Export = window.PythonGraderUdemyExport;
         if (!Export) {
-            setStatus('error', 'Udemy export module not loaded');
+            setUdemyStatus('error', 'Udemy export module not loaded');
             return;
         }
         var next;
         try {
             next = currentAuthorExercise();
         } catch (e) {
-            setStatus('error', e.message || String(e));
+            setUdemyStatus('error', e.message || String(e));
             return;
         }
-        setStatus('pending', 'Checking Udemy compatibility…');
+        setUdemyStatus('pending', 'Checking Udemy compatibility…');
         Export.preview(next).then(function (preview) {
             renderUdemyPanel(preview);
             if (preview.ok) {
-                setStatus('success', 'Compatible — copy fields into Udemy, or download ZIP');
+                setUdemyStatus('success', 'Compatible — copy fields into Udemy, or download ZIP');
             } else {
                 var first = (preview.report && preview.report.errors && preview.report.errors[0])
                     ? preview.report.errors[0]
                     : 'see details below';
-                setStatus('error', 'Not exportable — ' + first);
+                setUdemyStatus('error', 'Not exportable — ' + first);
             }
         }).catch(function (err) {
-            setStatus('error', (err && err.message) || String(err));
+            setUdemyStatus('error', (err && err.message) || String(err));
         });
     }
 
     function authorDownloadUdemyZip() {
         var Export = window.PythonGraderUdemyExport;
         if (!Export) {
-            setStatus('error', 'Udemy export module not loaded');
+            setUdemyStatus('error', 'Udemy export module not loaded');
             return;
         }
         if (!window.fflate) {
-            setStatus('error', 'ZIP library (fflate) not loaded');
+            setUdemyStatus('error', 'ZIP library (fflate) not loaded');
             return;
         }
         var next;
         try {
             next = currentAuthorExercise();
         } catch (e) {
-            setStatus('error', e.message || String(e));
+            setUdemyStatus('error', e.message || String(e));
             return;
         }
-        setStatus('pending', 'Building Udemy ZIP…');
+        setUdemyStatus('pending', 'Building Udemy ZIP…');
         Export.exportZip(next).then(function (result) {
             renderUdemyPanel({
                 ok: result.ok,
@@ -1273,15 +1280,15 @@
                 pasteFields: result.pasteFields || null
             });
             if (result.ok) {
-                setStatus('success', 'Downloaded ' + result.filename);
+                setUdemyStatus('success', 'Downloaded ' + result.filename);
             } else {
                 var first = (result.report && result.report.errors && result.report.errors[0])
                     ? result.report.errors[0]
                     : 'see details below';
-                setStatus('error', 'Not exportable — ' + first);
+                setUdemyStatus('error', 'Not exportable — ' + first);
             }
         }).catch(function (err) {
-            setStatus('error', (err && err.message) || String(err));
+            setUdemyStatus('error', (err && err.message) || String(err));
         });
     }
 
@@ -1291,79 +1298,224 @@
         });
     }
 
+    function activateAuthorTab(tabId) {
+        var tabs = document.querySelectorAll('.author-tab');
+        var panes = document.querySelectorAll('.author-pane');
+        tabs.forEach(function (tab) {
+            var active = tab.getAttribute('data-tab') === tabId;
+            tab.classList.toggle('is-active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        panes.forEach(function (pane) {
+            var active = pane.id === 'author-pane-' + tabId;
+            pane.hidden = !active;
+        });
+        if (tabId === 'json') {
+            try {
+                syncAuthorJsonFromFields();
+            } catch (e) { /* leave JSON as-is */ }
+        }
+        if (tabId === 'udemy') {
+            // Stay at the top of the author UI; preview must not scroll the page down.
+            try {
+                window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+            } catch (e) {
+                window.scrollTo(0, 0);
+            }
+            authorExportUdemyPreview();
+        }
+    }
+
     function renderAuthorBody() {
         app.innerHTML = '';
 
         var promptField = el('div', { className: 'author-prompt-field' }, [
-            el('div', { className: 'field-label', text: 'Prompt / instructions' }),
+            el('div', { className: 'field-label', text: 'Instructions' }),
             el('div', { className: 'ckeditor-container' }, [
                 el('textarea', {
                     id: 'author-prompt',
                     name: 'instructions',
                     rows: '8',
-                    'aria-label': 'Assignment prompt'
+                    'aria-label': 'Assignment instructions'
                 })
             ])
         ]);
 
-        app.appendChild(el('section', { className: 'panel' }, [
-            el('h2', { text: 'Edit assignment' }),
-            el('p', {
-                className: 'dirty-note',
-                text: 'Changes save to this placement only (lti_link.json). Catalog files are not modified.'
+        var infoPane = el('div', {
+            className: 'author-pane author-meta',
+            id: 'author-pane-info',
+            role: 'tabpanel',
+            'aria-labelledby': 'author-tab-info'
+        }, [
+            el('h2', { id: 'author-heading-info', text: 'Information' }),
+            el('label', { for: 'author-title', text: 'Title' }),
+            el('textarea', {
+                id: 'author-title',
+                className: 'author-short',
+                rows: '2',
+                'aria-label': 'Title'
             }),
-            el('div', { className: 'author-meta' }, [
-                el('label', { for: 'author-title', text: 'Title' }),
-                el('input', { type: 'text', id: 'author-title' }),
-                el('label', { for: 'author-learning-objective', text: 'Learning objective (Udemy)' }),
-                el('input', {
-                    type: 'text',
-                    id: 'author-learning-objective',
-                    'aria-label': 'Learning objective for Udemy export'
-                }),
-                el('label', { for: 'author-hint', text: 'Hint (Udemy rich text / HTML)' }),
-                el('textarea', {
-                    id: 'author-hint',
-                    rows: '2',
-                    'aria-label': 'Learner hint for Udemy export (HTML or plain text)'
-                }),
-                el('label', {
-                    for: 'author-solution-explanation',
-                    text: 'Solution explanation (Udemy rich text / HTML)'
-                }),
-                el('textarea', {
-                    id: 'author-solution-explanation',
-                    rows: '3',
-                    'aria-label': 'Solution explanation for Udemy export (HTML or plain text)'
-                }),
-                promptField,
-                el('label', { for: 'author-starter', text: 'Starter (student.py)' }),
-                el('textarea', { id: 'author-starter', className: 'code', rows: '8' }),
-                el('label', { for: 'author-solution', text: 'Solution (student.py)' }),
-                el('textarea', { id: 'author-solution', className: 'code', rows: '8' }),
-                el('label', { for: 'author-evaluation', text: 'Evaluation (unittest)' }),
-                el('textarea', { id: 'author-evaluation', className: 'code', rows: '12' }),
-                el('label', { for: 'author-stdin', text: 'Default stdin' }),
-                el('textarea', { id: 'author-stdin', className: 'code', rows: '2' }),
-                el('label', { for: 'author-timeout', text: 'Timeout (ms)' }),
-                el('input', { type: 'number', id: 'author-timeout', min: '1000', max: '60000' })
-            ]),
-            // Keep Export / Udemy panel above the large JSON textarea so it stays visible.
+            promptField,
+            el('label', { for: 'author-learning-objective', text: 'Learning objective' }),
+            el('textarea', {
+                id: 'author-learning-objective',
+                className: 'author-short',
+                rows: '2',
+                'aria-label': 'Learning objective'
+            }),
+            el('label', { for: 'author-hint', text: 'Hint' }),
+            el('textarea', {
+                id: 'author-hint',
+                rows: '3',
+                'aria-label': 'Learner hint (HTML or plain text)'
+            }),
+            el('label', {
+                for: 'author-solution-explanation',
+                text: 'Solution explanation'
+            }),
+            el('textarea', {
+                id: 'author-solution-explanation',
+                rows: '4',
+                'aria-label': 'Solution explanation (HTML or plain text)'
+            })
+        ]);
+
+        var codePane = el('div', {
+            className: 'author-pane author-meta',
+            id: 'author-pane-code',
+            role: 'tabpanel',
+            'aria-labelledby': 'author-tab-code',
+            hidden: true
+        }, [
+            el('h2', { id: 'author-heading-code', text: 'Code' }),
+            el('label', { for: 'author-solution', text: 'Solution (student.py)' }),
+            el('textarea', { id: 'author-solution', className: 'code', rows: '10' }),
+            el('label', { for: 'author-starter', text: 'Starter / learner file (student.py)' }),
+            el('textarea', { id: 'author-starter', className: 'code', rows: '8' }),
+            el('label', { for: 'author-stdin', text: 'Default standard input' }),
+            el('textarea', { id: 'author-stdin', className: 'code', rows: '3' }),
+            el('label', { for: 'author-timeout', text: 'Timeout (ms)' }),
+            el('input', { type: 'number', id: 'author-timeout', min: '1000', max: '60000' }),
+            el('label', { for: 'author-evaluation', text: 'Evaluation (unittest)' }),
+            el('textarea', { id: 'author-evaluation', className: 'code', rows: '14' })
+        ]);
+
+        var udemyPane = el('div', {
+            className: 'author-pane',
+            id: 'author-pane-udemy',
+            role: 'tabpanel',
+            'aria-labelledby': 'author-tab-udemy',
+            hidden: true
+        }, [
+            el('h2', { id: 'author-heading-udemy', text: 'Udemy export' }),
             el('div', { className: 'author-actions' }, [
-                el('button', { type: 'button', className: 'btn btn-primary', id: 'btnSave', text: 'Save assignment' }),
-                el('button', { type: 'button', className: 'btn', id: 'btnSyncJson', text: 'Refresh JSON from fields' }),
-                el('button', { type: 'button', className: 'btn', id: 'btnLoadJson', text: 'Apply JSON to fields' }),
-                el('button', { type: 'button', className: 'btn', id: 'btnUdemyExport', text: 'Export to Udemy' }),
-                el('span', { id: 'status', 'data-state': '', 'aria-live': 'polite' })
+                el('button', {
+                    type: 'button',
+                    className: 'btn btn-primary',
+                    id: 'btnUdemyExport',
+                    text: 'Refresh Udemy export'
+                }),
+                el('button', {
+                    type: 'button',
+                    className: 'btn',
+                    id: 'btnUdemyDownload',
+                    text: 'Download ZIP',
+                    disabled: 'disabled'
+                }),
+                el('button', {
+                    type: 'button',
+                    className: 'btn',
+                    id: 'btnUdemyClose',
+                    text: 'Close',
+                    disabled: 'disabled'
+                }),
+                el('span', {
+                    id: 'udemy-status',
+                    className: 'udemy-status-line',
+                    'data-state': '',
+                    'aria-live': 'polite'
+                })
             ]),
-            el('div', { id: 'udemy-panel', className: 'udemy-panel', hidden: true }),
-            el('div', { className: 'author-meta author-json-block' }, [
-                el('label', { for: 'author-json', text: 'Full assignment JSON' }),
-                el('textarea', { id: 'author-json', className: 'code', rows: '16' })
-            ])
+            el('div', { id: 'udemy-panel', className: 'udemy-panel', hidden: true })
+        ]);
+
+        var jsonPane = el('div', {
+            className: 'author-pane author-meta',
+            id: 'author-pane-json',
+            role: 'tabpanel',
+            'aria-labelledby': 'author-tab-json',
+            hidden: true
+        }, [
+            el('h2', { id: 'author-heading-json', text: 'Assignment JSON' }),
+            el('div', { className: 'author-actions' }, [
+                el('button', {
+                    type: 'button',
+                    className: 'btn btn-primary',
+                    id: 'btnSyncJson',
+                    text: 'Refresh JSON from fields'
+                }),
+                el('button', {
+                    type: 'button',
+                    className: 'btn',
+                    id: 'btnLoadJson',
+                    text: 'Apply JSON to fields'
+                })
+            ]),
+            el('label', { for: 'author-json', text: 'Full assignment JSON' }),
+            el('textarea', { id: 'author-json', className: 'code', rows: '22' })
+        ]);
+
+        var tablist = el('div', { className: 'author-tabs', role: 'tablist', 'aria-label': 'Authoring sections' });
+        [
+            { id: 'info', label: 'Information' },
+            { id: 'code', label: 'Code' },
+            { id: 'udemy', label: 'Udemy export' },
+            { id: 'json', label: 'Assignment JSON' }
+        ].forEach(function (t, i) {
+            var tab = el('button', {
+                type: 'button',
+                className: 'author-tab' + (i === 0 ? ' is-active' : ''),
+                id: 'author-tab-' + t.id,
+                role: 'tab',
+                'data-tab': t.id,
+                'aria-controls': 'author-pane-' + t.id,
+                'aria-selected': i === 0 ? 'true' : 'false',
+                text: t.label
+            });
+            tab.addEventListener('click', function () {
+                activateAuthorTab(t.id);
+            });
+            tablist.appendChild(tab);
+        });
+
+        app.appendChild(el('section', { className: 'panel author-panel' }, [
+            el('div', { className: 'author-header' }, [
+                el('div', { className: 'author-header-text' }, [
+                    el('h1', { id: 'author-page-title', text: 'Edit assignment' }),
+                    el('p', {
+                        className: 'dirty-note',
+                        text: 'Changes save to this placement only (lti_link.json). Catalog files are not modified.'
+                    })
+                ]),
+                el('div', { className: 'author-header-actions' }, [
+                    el('button', {
+                        type: 'button',
+                        className: 'btn btn-primary',
+                        id: 'btnSave',
+                        text: 'Save assignment'
+                    }),
+                    el('span', { id: 'status', 'data-state': '', 'aria-live': 'polite' })
+                ])
+            ]),
+            tablist,
+            infoPane,
+            codePane,
+            udemyPane,
+            jsonPane
         ]));
 
         loadAuthorFieldsFromExercise(exercise);
+        setTitle();
         initPromptEditor();
 
         $('#btnSave').addEventListener('click', saveAuthorExercise);
@@ -1385,6 +1537,10 @@
             }
         });
         $('#btnUdemyExport').addEventListener('click', authorExportUdemyPreview);
+        $('#btnUdemyClose').addEventListener('click', closeUdemyPanel);
+        $('#btnUdemyDownload').addEventListener('click', function () {
+            authorDownloadUdemyZip();
+        });
     }
 
     function boot() {

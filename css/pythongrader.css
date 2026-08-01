@@ -128,6 +128,11 @@ body {
     padding: 1.25rem;
 }
 
+/* Author UI: match topbar full width — no orphan gap on the right */
+#app:has(.author-panel) {
+    max-width: none;
+}
+
 /* Learner: editor left, output/results right; stack on narrow screens */
 .learner-layout {
     display: grid;
@@ -282,6 +287,15 @@ textarea.code {
     min-height: 10rem;
 }
 
+/* Title / learning objective — typically 1–2 lines */
+textarea.author-short {
+    min-height: 0;
+    resize: vertical;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.35;
+}
+
 .toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -290,21 +304,38 @@ textarea.code {
     margin: 0 0 0.75rem;
 }
 
-#status {
+#status,
+#udemy-status {
     font-size: 0.9rem;
     color: var(--muted);
 }
 #status[data-state="ready"],
 #status[data-state="complete"],
-#status[data-state="success"] { color: var(--ok); }
+#status[data-state="success"],
+#udemy-status[data-state="ready"],
+#udemy-status[data-state="complete"],
+#udemy-status[data-state="success"] { color: var(--ok); }
 #status[data-state="running"],
 #status[data-state="pending"],
-#status[data-state="loading"] { color: var(--warn); }
+#status[data-state="loading"],
+#udemy-status[data-state="running"],
+#udemy-status[data-state="pending"],
+#udemy-status[data-state="loading"] { color: var(--warn); }
 #status[data-state="timeout"],
 #status[data-state="worker_error"],
 #status[data-state="grader_error"],
 #status[data-state="error"],
-#status[data-state="fail"] { color: var(--fail); }
+#status[data-state="fail"],
+#udemy-status[data-state="timeout"],
+#udemy-status[data-state="worker_error"],
+#udemy-status[data-state="grader_error"],
+#udemy-status[data-state="error"],
+#udemy-status[data-state="fail"] { color: var(--fail); }
+
+.udemy-status-line {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
 
 .dirty-note {
     font-size: 0.85rem;
@@ -367,16 +398,107 @@ pre.output {
     margin-top: 0.35rem;
 }
 
+.author-panel {
+    max-width: none;
+    width: 100%;
+}
+
+.author-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.author-header h1 {
+    margin: 0 0 0.25rem;
+    font-size: 1.45rem;
+    line-height: 1.25;
+}
+
+.author-pane > h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.15rem;
+    line-height: 1.3;
+    color: var(--text);
+}
+
+.udemy-paste > h3 {
+    margin: 0 0 0.35rem;
+    font-size: 1.05rem;
+}
+
+.udemy-paste-head h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.author-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.author-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0 0 1rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+}
+
+.author-tab {
+    appearance: none;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 6px 6px 0 0;
+    padding: 0.55rem 0.9rem;
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: -1px;
+}
+
+.author-tab:hover {
+    color: var(--text);
+    background: #eef2f6;
+}
+
+.author-tab.is-active {
+    background: var(--panel);
+    color: var(--text);
+    border-color: var(--border);
+    border-bottom-color: var(--panel);
+}
+
+.author-pane {
+    padding-top: 0.25rem;
+}
+
 .author-meta {
     display: grid;
-    gap: 0.75rem;
+    gap: 0.65rem;
+}
+
+.author-meta > label,
+.author-meta > .field-label {
+    margin-top: 0.35rem;
 }
 
 .author-actions {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
-    margin-top: 0.75rem;
+    margin: 0 0 0.85rem;
 }
 
 .error-banner {
@@ -418,12 +540,14 @@ pre.output {
     background: #fff5f5;
 }
 
-.udemy-panel h3 {
-    margin: 0 0 0.5rem;
+.udemy-panel .udemy-status {
+    margin: 1rem 0 0;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
     font-size: 1rem;
 }
 
-.udemy-panel-blocked h3 {
+.udemy-panel-blocked .udemy-status {
     color: #b42318;
 }
 
@@ -445,35 +569,10 @@ pre.output {
     margin: 0.2rem 0;
 }
 
-.udemy-panel pre {
-    margin: 0.5rem 0 0;
-    white-space: pre-wrap;
-    font-family: var(--mono);
-    font-size: 0.82rem;
-    max-height: 280px;
-    overflow: auto;
-}
-
-.author-json-block {
-    margin-top: 0.5rem;
-}
-
-.udemy-panel .udemy-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.75rem;
-}
-
 .udemy-paste {
     margin-top: 1rem;
     padding-top: 0.75rem;
     border-top: 1px solid var(--border);
-}
-
-.udemy-paste h4 {
-    margin: 0 0 0.35rem;
-    font-size: 1rem;
 }
 
 .udemy-paste-asset {
@@ -505,16 +604,15 @@ pre.output {
     margin-bottom: 0.35rem;
 }
 
-.udemy-paste-head h5 {
-    margin: 0;
-    font-size: 0.9rem;
-}
-
 textarea.udemy-paste-text {
     min-height: 5rem;
     max-height: 22rem;
     overflow: auto;
     background: #fff;
+}
+
+textarea.udemy-paste-text.udemy-paste-compact {
+    min-height: 2.75rem;
 }
 
 /* Parsons code-fragments modal (ported from pythonauto) */
