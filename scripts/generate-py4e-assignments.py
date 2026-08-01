@@ -361,19 +361,44 @@ EXERCISES = [
         "slug": "dictionaries/exercise-9-4",
         "title": "9.4 Most Prolific Sender",
         "py4e": "9.4",
-        "stdin": "mbox-short.txt\n",
+        "stdin": "",
         "assets": ["mbox-short.txt"],
         "desired": "cwen@iupui.edu 5",
         "desired2": None,
-        "starter": 'name = input("Enter file:")\nif len(name) < 1:\n    name = "mbox-short.txt"\nhandle = open(name)\n',
-        "solution": 'name = input("Enter file:")\nif len(name) < 1 : name = "mbox-short.txt"\nhandle = open(name)\ncounts = dict()\nfor line in handle:\n    wds = line.split()\n    if len(wds) < 2 : continue\n    if wds[0] != "From" : continue\n    email = wds[1]\n    counts[email] = counts.get(email,0) + 1\n\nbigcount = None\nbigname = None\nfor name,count in counts.items():\n    if bigname is None or count > bigcount:\n        bigname = name\n        bigcount = count\n\nprint(bigname, bigcount)\n',
-        "prompt": "<b>9.4</b> Write a program that prompts for a file name (the autograder will provide <b>mbox-short.txt</b>), reads the file, and figures out who has sent the greatest number of mail messages. Build a dictionary of counts and find the most prolific sender.",
+        "starter": 'handle = open("mbox-short.txt")\n',
+        "solution": (
+            'handle = open("mbox-short.txt")\n'
+            "counts = dict()\n"
+            "for line in handle:\n"
+            "    wds = line.split()\n"
+            "    if len(wds) < 2 : continue\n"
+            '    if wds[0] != "From" : continue\n'
+            "    email = wds[1]\n"
+            "    counts[email] = counts.get(email,0) + 1\n"
+            "\n"
+            "bigcount = None\n"
+            "bigname = None\n"
+            "for name,count in counts.items():\n"
+            "    if bigname is None or count > bigcount:\n"
+            "        bigname = name\n"
+            "        bigcount = count\n"
+            "\n"
+            "print(bigname, bigcount)\n"
+        ),
+        "prompt": (
+            "<b>9.4</b> Write a program that opens the file <b>mbox-short.txt</b> "
+            "(hard-code that file name — do not prompt for it) and figures out who has "
+            "sent the greatest number of mail messages. Build a dictionary of counts "
+            "and find the most prolific sender."
+        ),
         "checks": {
+            "open": "You need to use open() to open the file.",
+            "mbox-short.txt": "Hard-code the file name mbox-short.txt — do not prompt for it.",
+            "!input": "Do not prompt for the file name — open mbox-short.txt directly.",
             "for": "You need a for loop to read the lines in the file.",
             "split": "You should use split() to break each line into words.",
             "!cwen@iupui.edu": "You need a for loop to read the data in the file.",
             "if": "You need to use one or more if statements to skip the lines that do not start with 'From '.",
-            "open": "You need to use open() to open the file.",
         },
         "timeout_ms": 10000,
     },
@@ -564,7 +589,8 @@ HINTS = {
         "For lines whose first word is From, print the second word (the email) and count those lines."
     ),
     "Exercise94": (
-        "Count From addresses in a dictionary, then loop through items to find the email with the highest count."
+        "Open mbox-short.txt directly (no input). Count From addresses in a dictionary, "
+        "then find the email with the highest count."
     ),
     "Exercise102": (
         "Open mbox-short.txt directly (no input). From each From line, split the time on ':', "
@@ -637,8 +663,8 @@ SOLUTION_EXPLANATIONS = {
         "address and keep a count for the final summary line."
     ),
     "Exercise94": (
-        "A dictionary maps each From address to how often it appears. After counting, "
-        "scan the items to find the address with the largest count."
+        "Open mbox-short.txt with a hard-coded name. A dictionary maps each From address "
+        "to how often it appears; after counting, find the address with the largest count."
     ),
     "Exercise102": (
         "Open mbox-short.txt with a hard-coded name. The time token on a From line splits "

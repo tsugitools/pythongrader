@@ -4,30 +4,48 @@
   "id": "dictionaries-exercise-9-4-001",
   "assignment_version": 1,
   "title": "9.4 Most Prolific Sender",
-  "prompt": "<p><b>9.4</b> Write a program that prompts for a file name (the autograder will provide <b>mbox-short.txt</b>), reads the file, and figures out who has sent the greatest number of mail messages. Build a dictionary of counts and find the most prolific sender.</p>",
+  "prompt": "<p><b>9.4</b> Write a program that opens the file <b>mbox-short.txt</b> (hard-code that file name — do not prompt for it) and figures out who has sent the greatest number of mail messages. Build a dictionary of counts and find the most prolific sender.</p>",
   "learning_objective": "Use a dictionary to count senders and find the most prolific email address.",
-  "hint": "Count From addresses in a dictionary, then loop through items to find the email with the highest count.",
-  "solution_explanation": "A dictionary maps each From address to how often it appears. After counting, scan the items to find the address with the largest count.",
+  "hint": "Open mbox-short.txt directly (no input). Count From addresses in a dictionary, then find the email with the highest count.",
+  "solution_explanation": "Open mbox-short.txt with a hard-coded name. A dictionary maps each From address to how often it appears; after counting, find the address with the largest count.",
   "files": {
     "student.py": {
       "mode": "editable",
-      "starter": "name = input(\"Enter file:\")\nif len(name) < 1:\n    name = \"mbox-short.txt\"\nhandle = open(name)\n",
-      "solution": "name = input(\"Enter file:\")\nif len(name) < 1 : name = \"mbox-short.txt\"\nhandle = open(name)\ncounts = dict()\nfor line in handle:\n    wds = line.split()\n    if len(wds) < 2 : continue\n    if wds[0] != \"From\" : continue\n    email = wds[1]\n    counts[email] = counts.get(email,0) + 1\n\nbigcount = None\nbigname = None\nfor name,count in counts.items():\n    if bigname is None or count > bigcount:\n        bigname = name\n        bigcount = count\n\nprint(bigname, bigcount)\n"
+      "starter": "handle = open(\"mbox-short.txt\")\n",
+      "solution": "handle = open(\"mbox-short.txt\")\ncounts = dict()\nfor line in handle:\n    wds = line.split()\n    if len(wds) < 2 : continue\n    if wds[0] != \"From\" : continue\n    email = wds[1]\n    counts[email] = counts.get(email,0) + 1\n\nbigcount = None\nbigname = None\nfor name,count in counts.items():\n    if bigname is None or count > bigcount:\n        bigname = name\n        bigcount = count\n\nprint(bigname, bigcount)\n"
     }
   },
   "run": {
-    "stdin": "mbox-short.txt\n",
+    "stdin": "",
     "timeout_ms": 10000
   },
   "evaluation": {
     "filename": "evaluation.py",
-    "source": "import io\nimport os\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"cwen@iupui.edu 5\"\nDESIRED2 = None\nSTDIN = \"mbox-short.txt\\n\"\n\n\ndef student_file():\n    \"\"\"PythonGrader uses student.py; Udemy coding exercises use exercise.py.\"\"\"\n    for name in ('student.py', 'exercise.py'):\n        if os.path.isfile(name):\n            return name\n    return 'student.py'\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path(student_file(), run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open(student_file(), encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_for(self):\n        self.assertIn(\"for\", self.src,\n            \"You need a for loop to read the lines in the file.\")\n\n    def test_source_split(self):\n        self.assertIn(\"split\", self.src,\n            \"You should use split() to break each line into words.\")\n\n    def test_source_not_cwen_iupui_edu(self):\n        self.assertNotIn(\"cwen@iupui.edu\", self.src,\n            \"You need a for loop to read the data in the file.\")\n\n    def test_source_if(self):\n        self.assertIn(\"if\", self.src,\n            \"You need to use one or more if statements to skip the lines that do not start with 'From '.\")\n\n    def test_source_open(self):\n        self.assertIn(\"open\", self.src,\n            \"You need to use open() to open the file.\")\n\n",
+    "source": "import io\nimport os\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"cwen@iupui.edu 5\"\nDESIRED2 = None\nSTDIN = \"\"\n\n\ndef student_file():\n    \"\"\"PythonGrader uses student.py; Udemy coding exercises use exercise.py.\"\"\"\n    for name in ('student.py', 'exercise.py'):\n        if os.path.isfile(name):\n            return name\n    return 'student.py'\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path(student_file(), run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open(student_file(), encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_open(self):\n        self.assertIn(\"open\", self.src,\n            \"You need to use open() to open the file.\")\n\n    def test_source_mbox_short_txt(self):\n        self.assertIn(\"mbox-short.txt\", self.src,\n            \"Hard-code the file name mbox-short.txt \\u2014 do not prompt for it.\")\n\n    def test_source_not_input(self):\n        self.assertNotIn(\"input\", self.src,\n            \"Do not prompt for the file name \\u2014 open mbox-short.txt directly.\")\n\n    def test_source_for(self):\n        self.assertIn(\"for\", self.src,\n            \"You need a for loop to read the lines in the file.\")\n\n    def test_source_split(self):\n        self.assertIn(\"split\", self.src,\n            \"You should use split() to break each line into words.\")\n\n    def test_source_not_cwen_iupui_edu(self):\n        self.assertNotIn(\"cwen@iupui.edu\", self.src,\n            \"You need a for loop to read the data in the file.\")\n\n    def test_source_if(self):\n        self.assertIn(\"if\", self.src,\n            \"You need to use one or more if statements to skip the lines that do not start with 'From '.\")\n\n",
     "tests": {
       "OutputTests.test_desired_output": {
         "title": "Matches desired output",
         "group": "Output",
         "points": 10,
         "feedback": "Compare your program output carefully to the Desired Output."
+      },
+      "SourceTests.test_source_open": {
+        "title": "Source check: require 'open'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You need to use open() to open the file."
+      },
+      "SourceTests.test_source_mbox_short_txt": {
+        "title": "Source check: require 'mbox-short.txt'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "Hard-code the file name mbox-short.txt — do not prompt for it."
+      },
+      "SourceTests.test_source_not_input": {
+        "title": "Source check: forbid 'input'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "Do not prompt for the file name — open mbox-short.txt directly."
       },
       "SourceTests.test_source_for": {
         "title": "Source check: require 'for'",
@@ -52,12 +70,6 @@
         "group": "Source requirements",
         "points": 1,
         "feedback": "You need to use one or more if statements to skip the lines that do not start with 'From '."
-      },
-      "SourceTests.test_source_open": {
-        "title": "Source check: require 'open'",
-        "group": "Source requirements",
-        "points": 1,
-        "feedback": "You need to use open() to open the file."
       }
     }
   },
@@ -70,7 +82,7 @@
   ],
   "packages": [],
   "grading": {
-    "maximum_points": 15,
+    "maximum_points": 17,
     "partial_credit": true
   },
   "exports": {
