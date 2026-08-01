@@ -406,15 +406,43 @@ pre.output {
 
 .udemy-panel {
     margin-top: 1rem;
+    margin-bottom: 1rem;
     padding: 0.85rem 1rem;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--code-bg);
 }
 
+.udemy-panel.udemy-panel-blocked {
+    border-color: #b42318;
+    background: #fff5f5;
+}
+
 .udemy-panel h3 {
     margin: 0 0 0.5rem;
     font-size: 1rem;
+}
+
+.udemy-panel-blocked h3 {
+    color: #b42318;
+}
+
+.udemy-errors {
+    margin: 0.5rem 0 0.75rem;
+}
+
+.udemy-errors-lead {
+    margin: 0 0 0.35rem;
+    font-weight: 600;
+}
+
+.udemy-errors-list {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.udemy-errors-list li {
+    margin: 0.2rem 0;
 }
 
 .udemy-panel pre {
@@ -424,6 +452,10 @@ pre.output {
     font-size: 0.82rem;
     max-height: 280px;
     overflow: auto;
+}
+
+.author-json-block {
+    margin-top: 0.5rem;
 }
 
 .udemy-panel .udemy-actions {
@@ -442,6 +474,17 @@ pre.output {
 .udemy-paste h4 {
     margin: 0 0 0.35rem;
     font-size: 1rem;
+}
+
+.udemy-paste-asset {
+    border-left: 3px solid #0b6bcb;
+    padding-left: 0.65rem;
+}
+
+.udemy-paste-asset-help {
+    margin: 0 0 0.4rem;
+    font-size: 0.85rem;
+    color: var(--muted);
 }
 
 .udemy-paste-help {

@@ -40,8 +40,8 @@ Each assignment includes a `learning_objective` and a learner `hint` for Udemy (
 | `Exercise22` | PY4E: 2.2 Welcome Name | Read a name with input() and print a personalized Hello greeting. |
 | `Exercise23` | PY4E: 2.3 Gross Pay | Convert input strings to numbers with float() and compute gross pay. |
 | `Exercise31` | PY4E: 3.1 Overtime Pay | Use if/else to pay overtime (1.5x) for hours worked above 40. |
-| `Exercise33` | PY4E: 3.3 Score Grade | Map a numeric score to a letter grade using if/elif/else. |
-| `Exercise46` | PY4E: 4.6 computepay() | Put overtime pay logic in a computepay() function that returns the result. |
+| `Exercise33` | PY4E: 3.3 Score Grade | Map a numeric score to a letter grade using if/elif/else. There is only one score — the solution does not need a loop. |
+| `Exercise46` | PY4E: 4.6 computepay() | Write a computepay(h, r) function that returns gross pay with overtime. |
 | `Exercise52` | PY4E: 5.2 Largest and Smallest | Loop until a sentinel value, track min and max, and catch invalid input with try/except. |
 | `Exercise65` | PY4E: 6.5 Extract Number | Extract a number from a string with find() and slicing, then convert it with float(). |
 | `FileOpen` | PY4E: Open and Count Lines | Open a text file and count its lines using a for loop. |
@@ -51,7 +51,7 @@ Each assignment includes a `learning_objective` and a learner `hint` for Udemy (
 | `Exercise85` | PY4E: 8.5 From Addresses | Parse email addresses from mailbox From lines and print a final count. |
 | `Exercise94` | PY4E: 9.4 Most Prolific Sender | Use a dictionary to count senders and find the most prolific email address. |
 | `Exercise102` | PY4E: 10.2 Hour Distribution | Count messages by hour of day and print the distribution sorted by hour. |
-| `Exercise111` | PY4E: 11.1 Answer to Life | Write a tiny program that prints the Answer to Life, the Universe, and Everything. |
+| `Exercise111` | PY4E: 11.1 Answer to Life, the Universe and Everything | Compute and print the Answer to Life, the Universe, and Everything (from The Hitchhiker's Guide to the Galaxy). |
 | `Exercise119` | PY4E: 11.9 Regex Line Count | Count lines in a mailbox file that match a regular expression with re.search(). |
 
 PY4E exercises are ported from `py4e/tools/pythonauto/exercises3.php` (Hello through 11.9), plus the original Hello Name sample. Keys and paths are defined in `assignments.php`. Shared files (`words.txt`, `romeo.txt`, `mbox-short.txt`) live under `assignments/_shared/files/`. Regenerate catalog JSON with:
@@ -68,7 +68,7 @@ python3 scripts/generate-py4e-assignments.py
 
 ## Export to Udemy
 
-In **Edit** mode, click **Export to Udemy** to preview compatibility, then **Download ZIP**. The ZIP is built entirely in the browser (`fflate`) and is never written on the server. Paste order: learning objective → solution → evaluation → instructions → starter → hint → **solution explanation** (last). Rich-text fields are HTML (`instructions.html`, `hint.html`, `solution-explanation.html`). Evaluation paths that mention `student.py` are rewritten to Udemy’s `exercise.py`. Assignments with repository assets or non-empty `packages` are reported as not exportable in Phase 1.
+In **Edit** mode, click **Export to Udemy** to preview compatibility, then **Download ZIP**. The ZIP is built entirely in the browser (`fflate`) and is never written on the server. Paste order: **title** → learning objective → solution → **required asset files** (if any) → evaluation → instructions → hint → solution explanation → **learner file** (last). Asset files are labeled with their Udemy filename (e.g. `mbox-short.txt`) for copy/paste. Rich-text fields are HTML (`instructions.html`, `hint.html`, `solution-explanation.html`). Evaluation paths that mention `student.py` are rewritten to Udemy’s `exercise.py`. Non-empty `packages` are still not exportable in Phase 1.
 
 ## Phase 0 spike
 

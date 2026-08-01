@@ -125,7 +125,19 @@ EXERCISES = [
         "desired2": None,
         "starter": 'score = input("Enter Score: ")\n',
         "solution": 'score = input("Enter Score: ")\ntry:\n    score = float(score)\nexcept:\n    print("Bad score")\n    quit()\nif score < 0.0 or score > 1.0:\n    print("Bad score")\n    quit()\nif score >= 0.9:\n    print("A")\nelif score >= 0.8:\n    print("B")\nelif score >= 0.7:\n    print("C")\nelif score >= 0.6:\n    print("D")\nelse:\n    print("F")\n',
-        "prompt": "<b>3.3</b> Write a program to prompt for a score between 0.0 and 1.0. If the score is out of range, print an error. If the score is between 0.0 and 1.0, print a grade using the table A/B/C/D/F. The autograder will provide the score as input (for the sample data, the grade should be B).",
+        "prompt": (
+            "<b>3.3</b> Write a program to prompt for a score between 0.0 and 1.0. "
+            "If the score is out of range, print an error. If the score is between 0.0 and 1.0, "
+            "print a grade using the following table:<br/>"
+            "Score&nbsp;&nbsp;&nbsp;&nbsp;Grade<br/>"
+            "&gt;= 0.9&nbsp;&nbsp;&nbsp;&nbsp;A<br/>"
+            "&gt;= 0.8&nbsp;&nbsp;&nbsp;&nbsp;B<br/>"
+            "&gt;= 0.7&nbsp;&nbsp;&nbsp;&nbsp;C<br/>"
+            "&gt;= 0.6&nbsp;&nbsp;&nbsp;&nbsp;D<br/>"
+            "&lt; 0.6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;F<br/>"
+            "If the user enters a value out of range, print a suitable error message and exit. "
+            "The autograder will provide the score as input (for the sample data, the grade should be B)."
+        ),
         "checks": {
             "input": "You must prompt for the score using the input() function.",
             "float": "You should use the built-in float() function to convert from a string to a float.",
@@ -140,25 +152,54 @@ EXERCISES = [
         "slug": "functions/exercise-4-6",
         "title": "4.6 computepay()",
         "py4e": "4.6",
-        "stdin": "45\n10.50\n",
+        "stdin": "",
         "assets": [],
-        "desired": "Pay 498.75",
+        "desired": 498.75,  # unused for function grading; kept for docs
         "desired2": None,
-        "starter": 'def computepay(h, r):\n    return 42.37\n\nhrs = input("Enter Hours:")\np = computepay(10, 20)\nprint("Pay", p)\n',
-        "solution": 'def computepay(h, r):\n    if h <= 40:\n        return h * r\n    return 40 * r + (h - 40) * r * 1.5\n\nhrs = input("Enter Hours:")\nrate = input("Enter Rate:")\nh = float(hrs)\nr = float(rate)\np = computepay(h, r)\nprint("Pay", p)\n',
-        "prompt": "<b>4.6</b> Write a program to prompt the user for hours and rate per hour using input to compute gross pay. Put the logic in a function called <b>computepay()</b> and use the function to do the computation. The autograder will provide the hours and rate as input (for the sample data, the pay should be 498.75).",
+        "starter": "def computepay(h, r):\n    return 42.37\n",
+        "solution": (
+            "def computepay(h, r):\n"
+            "    if h <= 40:\n"
+            "        return h * r\n"
+            "    return 40 * r + (h - 40) * r * 1.5\n"
+        ),
+        "prompt": (
+            "<b>4.6</b> Write a function called <b>computepay(h, r)</b> that computes gross pay. "
+            "Pay the hourly rate for hours up to 40 and 1.5 times the hourly rate for all hours "
+            "worked above 40. Return the pay from the function — do not prompt for input or print. "
+            "The autograder will call your function with the test values "
+            "(for 45 hours at a rate of 10.50, the pay should be 498.75)."
+        ),
+        "function_grade": {
+            "name": "computepay",
+            "cases": [
+                {
+                    "method": "test_overtime",
+                    "title": "Overtime: 45 hours at 10.50",
+                    "args": [45, 10.5],
+                    "expected": 498.75,
+                    "points": 10,
+                    "feedback": "Pay 40 hours at the normal rate and the remaining hours at 1.5x.",
+                },
+                {
+                    "method": "test_no_overtime",
+                    "title": "No overtime: 40 hours at 10",
+                    "args": [40, 10],
+                    "expected": 400.0,
+                    "points": 4,
+                    "feedback": "When hours are 40 or less, return hours * rate.",
+                },
+            ],
+        },
         "checks": {
-            "input": "You must prompt the hours and rate using the input() function.",
-            "print": "You must use the print function to print the output.",
-            "!45": "You must prompt for the data.",
-            "!10.5": "You must prompt for the data.",
-            "if": "You should use an if statement to decide the overtime computation or not.",
-            "float": "You should use the built-in float() function to convert from a string to a float.",
-            "def": "You must use a function called computepay to do the computation.",
-            "!sum(": "Do not use a variable named sum or a function named sum()",
-            "return": "You must use a return statement to pass the computed pay back to the main code.",
+            "def": "You must define a function called computepay.",
             "computepay": "You must use a function called computepay to do the computation.",
-            "!475": "You must actually calculate the pay.",
+            "return": "You must use a return statement to return the computed pay.",
+            "if": "You should use an if statement to decide the overtime computation or not.",
+            "!input": "Do not prompt for input — only write the computepay function.",
+            "!print": "Do not print — return the pay from computepay.",
+            "!sum(": "Do not use a variable named sum or a function named sum()",
+            "!498": "You must actually calculate the pay.",
         },
         "timeout_ms": 5000,
     },
@@ -341,14 +382,37 @@ EXERCISES = [
         "slug": "tuples/exercise-10-2",
         "title": "10.2 Hour Distribution",
         "py4e": "10.2",
-        "stdin": "mbox-short.txt\n",
+        "stdin": "",
         "assets": ["mbox-short.txt"],
         "desired": "04 3\n06 1\n07 1\n09 2\n10 3\n11 6\n14 1\n15 2\n16 4\n17 2\n18 1\n19 1",
         "desired2": None,
-        "starter": 'name = input("Enter file:")\nif len(name) < 1:\n    name = "mbox-short.txt"\nhandle = open(name)\n',
-        "solution": 'name = input("Enter file:")\nif len(name) < 1 : name = "mbox-short.txt"\nhandle = open(name)\ncounts = dict()\nfor line in handle:\n    wds = line.split()\n    if len(wds) < 6 : continue\n    if wds[0] != "From" : continue\n    when = wds[5]\n    tics = when.split(":")\n    if len(tics) != 3 : continue\n    hour = tics[0]\n    counts[hour] = counts.get(hour,0) + 1\n\nfor key, val in sorted(counts.items()):\n    print(key, val)\n',
-        "prompt": "<b>10.2</b> Write a program that prompts for a file name (the autograder will provide <b>mbox-short.txt</b>), reads the file, and figures out the distribution by hour of the day for each of the messages. Pull the hour from the 'From ' line, count by hour, and print counts sorted by hour.",
+        "starter": 'handle = open("mbox-short.txt")\n',
+        "solution": (
+            'handle = open("mbox-short.txt")\n'
+            "counts = dict()\n"
+            "for line in handle:\n"
+            "    wds = line.split()\n"
+            "    if len(wds) < 6 : continue\n"
+            '    if wds[0] != "From" : continue\n'
+            "    when = wds[5]\n"
+            '    tics = when.split(":")\n'
+            "    if len(tics) != 3 : continue\n"
+            "    hour = tics[0]\n"
+            "    counts[hour] = counts.get(hour,0) + 1\n"
+            "\n"
+            "for key, val in sorted(counts.items()):\n"
+            "    print(key, val)\n"
+        ),
+        "prompt": (
+            "<b>10.2</b> Write a program that opens the file <b>mbox-short.txt</b> "
+            "(hard-code that file name — do not prompt for it) and figures out the "
+            "distribution by hour of the day for each of the messages. Pull the hour "
+            "from the 'From ' line, count by hour, and print counts sorted by hour."
+        ),
         "checks": {
+            "open": "You need to use open() to open the file.",
+            "mbox-short.txt": "Hard-code the file name mbox-short.txt — do not prompt for it.",
+            "!input": "Do not prompt for the file name — open mbox-short.txt directly.",
             "for": "You need a for loop to read the lines in the file.",
             "sort": "You need to use a sort (list sort() or sorted()) to order the hours.",
         },
@@ -357,18 +421,19 @@ EXERCISES = [
     {
         "key": "Exercise111",
         "slug": "regex/exercise-11-1",
-        "title": "11.1 Answer to Life",
+        "title": "11.1 Answer to Life, the Universe and Everything",
         "py4e": "11.1",
         "stdin": "",
         "assets": [],
         "desired": "42",
         "desired2": None,
-        "starter": "",
+        "starter": "# Print the answer — but it must be computed, not hard-coded\n",
         "solution": "print(6 * 7)\n",
         "prompt": "<b>11.1</b> Write a program that computes the <b>Answer to the Ultimate Question of Life, the Universe, and Everything</b>. Sample output is below.",
         "checks": {
             "print": "By now you should know that a print function would be helpful here.",
             "*": "I think that multiplication is involved...",
+            "!42": "Do not hard-code 42 — compute the answer.",
         },
         "timeout_ms": 5000,
     },
@@ -412,10 +477,11 @@ LEARNING_OBJECTIVES = {
         "Use if/else to pay overtime (1.5x) for hours worked above 40."
     ),
     "Exercise33": (
-        "Map a numeric score to a letter grade using if/elif/else."
+        "Map a numeric score to a letter grade using if/elif/else. "
+        "There is only one score — the solution does not need a loop."
     ),
     "Exercise46": (
-        "Put overtime pay logic in a computepay() function that returns the result."
+        "Write a computepay(h, r) function that returns gross pay with overtime."
     ),
     "Exercise52": (
         "Loop until a sentinel value, track min and max, and catch invalid input with try/except."
@@ -445,7 +511,8 @@ LEARNING_OBJECTIVES = {
         "Count messages by hour of day and print the distribution sorted by hour."
     ),
     "Exercise111": (
-        "Write a tiny program that prints the Answer to Life, the Universe, and Everything."
+        "Compute and print the Answer to Life, the Universe, and Everything "
+        "(from The Hitchhiker's Guide to the Galaxy)."
     ),
     "Exercise119": (
         "Count lines in a mailbox file that match a regular expression with re.search()."
@@ -473,7 +540,7 @@ HINTS = {
         "Convert the score with float(), reject values outside 0.0–1.0, then use if/elif for A–F thresholds."
     ),
     "Exercise46": (
-        "Move the overtime math into def computepay(h, r): and return the pay; call it from the main code."
+        "Only write def computepay(h, r): — if hours are over 40, pay the extra hours at 1.5x and return the total."
     ),
     "Exercise52": (
         "Keep looping until the user types done. Use try/except around int(), and update largest/smallest as you go."
@@ -500,10 +567,11 @@ HINTS = {
         "Count From addresses in a dictionary, then loop through items to find the email with the highest count."
     ),
     "Exercise102": (
-        "From each From line, take the time field, split on ':', count by hour, then print sorted(hour, count)."
+        "Open mbox-short.txt directly (no input). From each From line, split the time on ':', "
+        "count by hour, then print sorted(hour, count)."
     ),
     "Exercise111": (
-        "Douglas Adams fans know the answer is 6 * 7 — print that product."
+        "In The Hitchhiker's Guide to the Galaxy, the Answer is 6 * 7 — compute and print that product."
     ),
     "Exercise119": (
         "import re, open mbox-short.txt, and use re.search(r'^From ', line) inside your counting loop."
@@ -537,8 +605,8 @@ SOLUTION_EXPLANATIONS = {
         "if/elif/else tests pick the matching letter grade from high to low."
     ),
     "Exercise46": (
-        "computepay(h, r) hides the overtime math and returns the pay. The main program "
-        "only reads input, converts values, calls the function, and prints the result."
+        "computepay(h, r) returns the pay. Hours up to 40 use the normal rate; hours above "
+        "40 use 1.5 times the rate. The autograder calls the function — no input() or print() needed."
     ),
     "Exercise52": (
         "A while loop reads numbers until done. try/except skips bad input, and you "
@@ -573,8 +641,8 @@ SOLUTION_EXPLANATIONS = {
         "scan the items to find the address with the largest count."
     ),
     "Exercise102": (
-        "The time token on a From line splits into hour:minute:second. Count by hour "
-        "in a dictionary, then print the hours in sorted order with their counts."
+        "Open mbox-short.txt with a hard-coded name. The time token on a From line splits "
+        "into hour:minute:second. Count by hour in a dictionary, then print sorted hours and counts."
     ),
     "Exercise111": (
         "The joke answer from The Hitchhiker's Guide is 42, which is just 6 * 7 printed."
@@ -606,62 +674,24 @@ def check_method_name(needle: str) -> str:
     return "test_source_" + safe[:40]
 
 
-def build_evaluation(ex: dict) -> tuple[str, dict]:
-    desired = ex["desired"]
-    desired2 = ex.get("desired2")
-    stdin = ex["stdin"]
-    checks = ex.get("checks") or {}
+STUDENT_FILE_HELPER = '''
+def student_file():
+    """PythonGrader uses student.py; Udemy coding exercises use exercise.py."""
+    for name in ('student.py', 'exercise.py'):
+        if os.path.isfile(name):
+            return name
+    return 'student.py'
+'''.lstrip()
 
-    # Output test + one test per source check
-    output_points = 7
-    check_points = 0
-    if checks:
-        # distribute remaining 3 points across checks (min 1 each if few)
-        check_points = max(1, 3 // len(checks)) if len(checks) <= 3 else 1
-    # Recalculate for clean total 10
-    n_checks = len(checks)
-    if n_checks == 0:
-        output_points = 10
-        per_check = 0
-    else:
-        # Prefer output-heavy scoring like classic autograder (all-or-nothing feel with partial)
-        output_points = 7
-        remaining = 3
-        per_check = 1
-        # If more than 3 checks, only first 3 get points; rest are 0-point pedagogy... better: all checks share 3 points
-        # Use 0 points for extra and keep output 7? Or make total = 7 + n_checks with max points adjusted.
-        # Simplest: maximum_points = 10 + adjust: output 10 if no checks; else output=7, each check gets equal share of 3 (can be fractional - avoid). Use integer: output = 10 - n_checks if n_checks < 10 else 1, each check 1.
-        if n_checks <= 3:
-            output_points = 10 - n_checks
-            per_check = 1
-        else:
-            output_points = 7
-            per_check = 0  # source checks still run but unscored extras... bad.
-            # Better: all checks worth 1, output worth 10, maximum = 10 + n_checks
-            output_points = 10
-            per_check = 1
 
-    maximum = output_points + per_check * n_checks
-
-    desired_repr = json.dumps(desired)
-    desired2_repr = json.dumps(desired2) if desired2 else "None"
-    stdin_repr = json.dumps(stdin)
-
+def _build_source_checks(checks: dict, per_check: int) -> tuple[str, dict, list[str]]:
+    """Return SourceTests class source, metadata, and method bodies list."""
     check_methods = []
-    meta = {
-        "OutputTests.test_desired_output": {
-            "title": "Matches desired output",
-            "group": "Output",
-            "points": output_points,
-            "feedback": "Compare your program output carefully to the Desired Output.",
-        }
-    }
-
+    meta = {}
     for needle, feedback in checks.items():
         forbidden = needle.startswith("!")
         token = needle[1:] if forbidden else needle
         method = check_method_name(("not_" if forbidden else "") + token)
-        # ensure uniqueness
         base = method
         i = 2
         while any(m.startswith(f"    def {method}(") for m in check_methods):
@@ -697,6 +727,115 @@ def build_evaluation(ex: dict) -> tuple[str, dict]:
             "            cls.src = f.read()\n"
             "\n" + "\n".join(check_methods)
         )
+    return source_class, meta, check_methods
+
+
+def build_function_evaluation(ex: dict) -> tuple[str, dict, int]:
+    """Grade by importing student code and calling a named function."""
+    fg = ex["function_grade"]
+    fname = fg["name"]
+    cases = fg["cases"]
+    checks = ex.get("checks") or {}
+    n_checks = len(checks)
+    per_check = 1 if n_checks else 0
+
+    meta = {}
+    case_methods = []
+    case_points = 0
+    for case in cases:
+        method = case["method"]
+        args_repr = ", ".join(repr(a) for a in case["args"])
+        expected = case["expected"]
+        points = case.get("points", 5)
+        case_points += points
+        case_methods.append(
+            f"    def {method}(self):\n"
+            # Call via module attribute so Python does not bind self as first arg.
+            f"        got = self.mod.{fname}({args_repr})\n"
+            f"        self.assertAlmostEqual(got, {repr(expected)}, places=4,\n"
+            f"            msg={json.dumps(case.get('feedback') or 'Unexpected return value.')})\n"
+        )
+        meta[f"FunctionTests.{method}"] = {
+            "title": case.get("title") or method,
+            "group": "Function",
+            "points": points,
+            "feedback": case.get("feedback") or "Check the return value of your function.",
+        }
+
+    source_class, source_meta, _ = _build_source_checks(checks, per_check)
+    meta.update(source_meta)
+    maximum = case_points + per_check * n_checks
+
+    evaluation = f'''import importlib.util
+import os
+import unittest
+
+{STUDENT_FILE_HELPER}
+
+def load_student():
+    path = student_file()
+    spec = importlib.util.spec_from_file_location("_student_under_test", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Could not load student file: " + path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+class FunctionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = load_student()
+        if not hasattr(cls.mod, {json.dumps(fname)}):
+            raise AssertionError({json.dumps(f"Define a function named {fname}(h, r).")})
+
+{"".join(case_methods)}
+
+{source_class}
+'''
+    return evaluation, meta, maximum
+
+
+def build_evaluation(ex: dict) -> tuple[str, dict, int]:
+    if ex.get("function_grade"):
+        return build_function_evaluation(ex)
+
+    desired = ex["desired"]
+    desired2 = ex.get("desired2")
+    stdin = ex["stdin"]
+    checks = ex.get("checks") or {}
+
+    # Output test + one test per source check
+    n_checks = len(checks)
+    if n_checks == 0:
+        output_points = 10
+        per_check = 0
+    else:
+        # Prefer output-heavy scoring like classic autograder (all-or-nothing feel with partial)
+        if n_checks <= 3:
+            output_points = 10 - n_checks
+            per_check = 1
+        else:
+            # Better: all checks worth 1, output worth 10, maximum = 10 + n_checks
+            output_points = 10
+            per_check = 1
+
+    maximum = output_points + per_check * n_checks
+
+    desired_repr = json.dumps(desired)
+    desired2_repr = json.dumps(desired2) if desired2 else "None"
+    stdin_repr = json.dumps(stdin)
+
+    source_class, source_meta, _ = _build_source_checks(checks, per_check)
+    meta = {
+        "OutputTests.test_desired_output": {
+            "title": "Matches desired output",
+            "group": "Output",
+            "points": output_points,
+            "feedback": "Compare your program output carefully to the Desired Output.",
+        }
+    }
+    meta.update(source_meta)
 
     evaluation = f'''import io
 import os
@@ -710,13 +849,7 @@ DESIRED2 = {desired2_repr}
 STDIN = {stdin_repr}
 
 
-def student_file():
-    """PythonGrader uses student.py; Udemy coding exercises use exercise.py."""
-    for name in ('student.py', 'exercise.py'):
-        if os.path.isfile(name):
-            return name
-    return 'student.py'
-
+{STUDENT_FILE_HELPER}
 
 def run_student(stdin=STDIN):
     output = io.StringIO()

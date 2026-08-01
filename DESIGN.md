@@ -730,20 +730,21 @@ downloadBlob(blob, "hello-name-udemy.zip");
 
 ```text
 hello-name-udemy.zip
+├── title.txt
 ├── learning-objective.txt
 ├── solution.py
 ├── evaluation.py
 ├── instructions.html
-├── starter.py
 ├── hint.html
 ├── solution-explanation.html
+├── starter.py
 ├── manifest.json
 └── COMPATIBILITY.md
 ```
 
 `hints.md` may still be included in the ZIP when per-test feedback exists (review aid only; not a Udemy paste field). Compatible small assets may be included later after the exact Udemy target behavior is verified. Phase 1 reports native assets as unsupported rather than pretending they work.
 
-These are reviewable authoring files. If Udemy requires manual paste rather than ZIP import, the ZIP still provides a convenient single download and clear file separation. Paste order matches Udemy authoring and ends with Hint, then Solution explanation. `learning-objective.txt` is plain text; `instructions.html`, `hint.html`, and `solution-explanation.html` are HTML for Udemy's rich text editors.
+These are reviewable authoring files. If Udemy requires manual paste rather than ZIP import, the ZIP still provides a convenient single download and clear file separation. Paste order starts with Title, then Learning objective, and ends with the Learner file (`starter.py`). `title.txt` and `learning-objective.txt` are plain text; `instructions.html`, `hint.html`, and `solution-explanation.html` are HTML for Udemy's rich text editors.
 
 ### Translation rules
 
@@ -753,15 +754,18 @@ Phase 1 export is intentionally conservative:
 - `student.py` solution becomes `solution.py`;
 - ordinary standard-library evaluation source becomes `evaluation.py`;
 - evaluation references to `student.py` are rewritten to Udemy's learner file `exercise.py`;
+- `title` becomes `title.txt` (first paste field);
 - `learning_objective` becomes `learning-objective.txt` for Udemy's Plan-exercise field;
 - `hint` is exported as `hint.html` for Udemy's rich text Hint field (plain text wrapped in `<p>`);
 - prompt HTML is exported as `instructions.html` for Udemy's rich text editor;
-- `solution_explanation` is exported last as `solution-explanation.html` for Udemy's rich text field;
+- `solution_explanation` is exported as `solution-explanation.html` for Udemy's rich text field;
+- starter / learner file (`starter.py`) is the last paste field;
 - per-test feedback may still appear in optional `hints.md` for review;
 - PythonGrader point weights remain documented in the manifest;
 - the exporter reports when Udemy will not preserve native weighting or feedback;
 - PythonGrader-only helper imports are forbidden in Phase 1 evaluation code;
-- packages, multiple student files, and assets are unsupported until verified.
+- packages and multiple student files are unsupported until verified;
+- repository assets are fetched in the browser and exported as pasteable files under `files/<mount>` (after Solution in the paste sequence).
 
 Udemy coding exercises execute learner code as `exercise.py`. PythonGrader keeps `student.py` as the native editable file. Built-in evaluations prefer whichever of those files exists so the same unittest source can grade in both environments; the exporter still rewrites hardcoded `student.py` paths for hand-authored tests.
 
@@ -783,13 +787,12 @@ COMPATIBLE
 ✓ unittest evaluation
 ✓ unittest.mock.patch
 ✓ instructions
+✓ repository assets (paste into Udemy as named files)
 
 PARTIAL
 ~ PythonGrader weighted points may not be preserved by Udemy
+~ Paste each asset file into Udemy after the solution
 ~ Progressive hints are exported as a separate document
-
-UNSUPPORTED
-✗ Repository asset: assignments/files/count-lines/assets/words.txt
 ```
 
 Unknown features are `UNSUPPORTED`, never implicitly compatible.
@@ -925,7 +928,7 @@ Premature optimization of Pyodide initialization should not complicate the initi
 - explanation conversion;
 - hints;
 - partial-credit compatibility warning;
-- asset incompatibility;
+- asset files exported as paste fields after solution;
 - package incompatibility;
 - solution failure blocks export;
 - starter passing everything blocks export by default;

@@ -1059,22 +1059,30 @@
         copyTextToClipboard(html, btn);
     }
 
-    function renderUdemyPasteFields(host, members) {
+    function renderUdemyPasteFields(host, preview) {
         var Export = window.PythonGraderUdemyExport;
-        var fields = (Export && Export.PASTE_FIELDS) || [];
+        var members = preview && preview.members;
+        var fields = (preview && preview.pasteFields)
+            || (Export && Export.PASTE_FIELDS)
+            || [];
         var wrap = el('div', { className: 'udemy-paste', id: 'udemy-paste' });
         wrap.appendChild(el('h4', { text: 'Copy into Udemy' }));
         wrap.appendChild(el('p', {
             className: 'udemy-paste-help',
-            text: 'Paste each field into the matching Udemy coding-exercise box. For Instructions, Hint, and Solution explanation, use Copy as Rich Text so Udemy’s editors keep formatting. Solution explanation is last.'
+            text: 'Paste each field into the matching Udemy coding-exercise box. Title comes first; required data files appear after Solution (create a file with that name in Udemy); Learner file is last. For Instructions, Hint, and Solution explanation, use Copy as Rich Text so Udemy’s editors keep formatting.'
         }));
 
         fields.forEach(function (field) {
             if (!members || typeof members[field.file] !== 'string') return;
             var text = members[field.file];
-            var section = el('section', { className: 'udemy-paste-field' });
+            var section = el('section', {
+                className: 'udemy-paste-field' + (field.asset ? ' udemy-paste-asset' : '')
+            });
             var head = el('div', { className: 'udemy-paste-head' });
-            head.appendChild(el('h5', { text: field.label + ' (' + field.file + ')' }));
+            var heading = field.asset
+                ? ('Required file: ' + field.label)
+                : (field.label + ' (' + field.file + ')');
+            head.appendChild(el('h5', { text: heading }));
             var isHtml = field.clipboard === 'html';
             var btnCopy = el('button', {
                 type: 'button',
@@ -1090,9 +1098,16 @@
             });
             head.appendChild(btnCopy);
             section.appendChild(head);
+            if (field.asset) {
+                section.appendChild(el('p', {
+                    className: 'udemy-paste-asset-help',
+                    text: 'In Udemy, add a file named ' + field.label + ', then paste this content into it.'
+                }));
+            }
+            var lineCount = text.split('\n').length;
             section.appendChild(el('textarea', {
                 className: 'code udemy-paste-text',
-                rows: String(Math.min(16, Math.max(4, text.split('\n').length + 1))),
+                rows: String(Math.min(16, Math.max(4, Math.min(lineCount + 1, 12)))),
                 readonly: 'readonly',
                 spellcheck: 'false',
                 'aria-label': field.label
@@ -1110,10 +1125,29 @@
         var host = $('#udemy-panel');
         if (!host) return;
         host.hidden = false;
+        host.removeAttribute('hidden');
         host.innerHTML = '';
+        host.classList.toggle('udemy-panel-blocked', !preview.ok);
         host.appendChild(el('h3', {
             text: preview.ok ? 'Udemy export — compatible' : 'Udemy export — not exportable'
         }));
+
+        var report = preview.report || {};
+        var errors = report.errors || [];
+        if (!preview.ok && errors.length) {
+            var errBox = el('div', { className: 'udemy-errors' });
+            errBox.appendChild(el('p', {
+                className: 'udemy-errors-lead',
+                text: 'Blocking issues (fix these before Udemy export):'
+            }));
+            var ul = el('ul', { className: 'udemy-errors-list' });
+            errors.forEach(function (msg) {
+                ul.appendChild(el('li', { text: String(msg) }));
+            });
+            errBox.appendChild(ul);
+            host.appendChild(errBox);
+        }
+
         host.appendChild(el('pre', { text: preview.markdown || '' }));
 
         var actions = el('div', { className: 'udemy-actions' });
@@ -1145,7 +1179,9 @@
 
         btnClose.addEventListener('click', function () {
             host.hidden = true;
+            host.setAttribute('hidden', '');
             host.innerHTML = '';
+            host.classList.remove('udemy-panel-blocked');
         });
         btnDl.addEventListener('click', function () {
             authorDownloadUdemyZip();
@@ -1163,15 +1199,21 @@
                 setStatus('error', 'No paste fields available');
                 return;
             }
-            renderUdemyPasteFields(host, preview.members);
+            renderUdemyPasteFields(host, preview);
             btnPaste.textContent = 'Hide copy/paste fields';
             setStatus('success', 'Copy each field into Udemy');
         });
 
         // Compatible exports: open paste fields by default (ZIP still available).
         if (preview.ok && preview.members) {
-            renderUdemyPasteFields(host, preview.members);
+            renderUdemyPasteFields(host, preview);
             btnPaste.textContent = 'Hide copy/paste fields';
+        }
+
+        try {
+            host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } catch (e) {
+            host.scrollIntoView(true);
         }
     }
 
@@ -1189,13 +1231,19 @@
             return;
         }
         setStatus('pending', 'Checking Udemy compatibility…');
-        var preview = Export.preview(next);
-        renderUdemyPanel(preview);
-        if (preview.ok) {
-            setStatus('success', 'Compatible — copy fields into Udemy, or download ZIP');
-        } else {
-            setStatus('error', 'Not exportable — see Udemy export panel');
-        }
+        Export.preview(next).then(function (preview) {
+            renderUdemyPanel(preview);
+            if (preview.ok) {
+                setStatus('success', 'Compatible — copy fields into Udemy, or download ZIP');
+            } else {
+                var first = (preview.report && preview.report.errors && preview.report.errors[0])
+                    ? preview.report.errors[0]
+                    : 'see details below';
+                setStatus('error', 'Not exportable — ' + first);
+            }
+        }).catch(function (err) {
+            setStatus('error', (err && err.message) || String(err));
+        });
     }
 
     function authorDownloadUdemyZip() {
@@ -1216,22 +1264,25 @@
             return;
         }
         setStatus('pending', 'Building Udemy ZIP…');
-        try {
-            var result = Export.exportZip(next);
+        Export.exportZip(next).then(function (result) {
             renderUdemyPanel({
                 ok: result.ok,
                 markdown: result.markdown,
                 report: result.report,
-                members: result.members || null
+                members: result.members || null,
+                pasteFields: result.pasteFields || null
             });
             if (result.ok) {
                 setStatus('success', 'Downloaded ' + result.filename);
             } else {
-                setStatus('error', 'Not exportable — see Udemy export panel');
+                var first = (result.report && result.report.errors && result.report.errors[0])
+                    ? result.report.errors[0]
+                    : 'see details below';
+                setStatus('error', 'Not exportable — ' + first);
             }
-        } catch (err) {
+        }).catch(function (err) {
             setStatus('error', (err && err.message) || String(err));
-        }
+        });
     }
 
     function renderAuthor() {
@@ -1295,10 +1346,9 @@
                 el('label', { for: 'author-stdin', text: 'Default stdin' }),
                 el('textarea', { id: 'author-stdin', className: 'code', rows: '2' }),
                 el('label', { for: 'author-timeout', text: 'Timeout (ms)' }),
-                el('input', { type: 'number', id: 'author-timeout', min: '1000', max: '60000' }),
-                el('label', { for: 'author-json', text: 'Full assignment JSON' }),
-                el('textarea', { id: 'author-json', className: 'code', rows: '16' })
+                el('input', { type: 'number', id: 'author-timeout', min: '1000', max: '60000' })
             ]),
+            // Keep Export / Udemy panel above the large JSON textarea so it stays visible.
             el('div', { className: 'author-actions' }, [
                 el('button', { type: 'button', className: 'btn btn-primary', id: 'btnSave', text: 'Save assignment' }),
                 el('button', { type: 'button', className: 'btn', id: 'btnSyncJson', text: 'Refresh JSON from fields' }),
@@ -1306,7 +1356,11 @@
                 el('button', { type: 'button', className: 'btn', id: 'btnUdemyExport', text: 'Export to Udemy' }),
                 el('span', { id: 'status', 'data-state': '', 'aria-live': 'polite' })
             ]),
-            el('div', { id: 'udemy-panel', className: 'udemy-panel', hidden: true })
+            el('div', { id: 'udemy-panel', className: 'udemy-panel', hidden: true }),
+            el('div', { className: 'author-meta author-json-block' }, [
+                el('label', { for: 'author-json', text: 'Full assignment JSON' }),
+                el('textarea', { id: 'author-json', className: 'code', rows: '16' })
+            ])
         ]));
 
         loadAuthorFieldsFromExercise(exercise);

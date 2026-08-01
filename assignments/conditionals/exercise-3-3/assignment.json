@@ -4,8 +4,8 @@
   "id": "conditionals-exercise-3-3-001",
   "assignment_version": 1,
   "title": "3.3 Score Grade",
-  "prompt": "<p><b>3.3</b> Write a program to prompt for a score between 0.0 and 1.0. If the score is out of range, print an error. If the score is between 0.0 and 1.0, print a grade using the table A/B/C/D/F. The autograder will provide the score as input (for the sample data, the grade should be B).</p>",
-  "learning_objective": "Map a numeric score to a letter grade using if/elif/else.",
+  "prompt": "<p><b>3.3</b> Write a program to prompt for a score between 0.0 and 1.0. If the score is out of range, print an error. If the score is between 0.0 and 1.0, print a grade using the following table:<br/>Score&nbsp;&nbsp;&nbsp;&nbsp;Grade<br/>&gt;= 0.9&nbsp;&nbsp;&nbsp;&nbsp;A<br/>&gt;= 0.8&nbsp;&nbsp;&nbsp;&nbsp;B<br/>&gt;= 0.7&nbsp;&nbsp;&nbsp;&nbsp;C<br/>&gt;= 0.6&nbsp;&nbsp;&nbsp;&nbsp;D<br/>&lt; 0.6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;F<br/>If the user enters a value out of range, print a suitable error message and exit. The autograder will provide the score as input (for the sample data, the grade should be B).</p>",
+  "learning_objective": "Map a numeric score to a letter grade using if/elif/else. There is only one score — the solution does not need a loop.",
   "hint": "Convert the score with float(), reject values outside 0.0–1.0, then use if/elif for A–F thresholds.",
   "solution_explanation": "After converting the score to a float and checking the 0.0–1.0 range, chained if/elif/else tests pick the matching letter grade from high to low.",
   "files": {

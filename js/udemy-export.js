@@ -2,13 +2,14 @@
  * PythonGrader → Udemy export (browser-only ZIP via fflate).
  *
  * Phase 1 package:
- *   learning-objective.txt, solution.py, evaluation.py, instructions.html,
- *   starter.py, hint.html, solution-explanation.html, hints.md (optional),
- *   manifest.json, COMPATIBILITY.md
+ *   title.txt, learning-objective.txt, solution.py, files/<asset>,
+ *   evaluation.py, instructions.html, hint.html, solution-explanation.html,
+ *   starter.py, hints.md (optional), manifest.json, COMPATIBILITY.md
  *
  * Udemy coding exercises use exercise.py for learner code; PythonGrader uses
  * student.py. Evaluation source is rewritten on export accordingly.
  * Instructions, Hint, and Solution explanation are HTML for Udemy's RTEs.
+ * Repository assets are fetched and offered as copy/paste fields (after solution).
  */
 (function (global) {
     'use strict';
@@ -214,12 +215,11 @@
         }
 
         var assets = (exercise && exercise.assets) || [];
-        assets.forEach(function (a) {
-            var label = (a && (a.source || a.mount)) || 'asset';
-            unsupported.push('Repository asset: ' + label);
-        });
         if (assets.length) {
-            errors.push('Repository assets are not supported in Phase 1 Udemy export');
+            compatible.push('repository assets (paste into Udemy as named files)');
+            partial.push(
+                'Paste each asset file into Udemy after the solution (create a file with that name)'
+            );
         }
 
         var grading = (exercise && exercise.grading) || {};
@@ -245,6 +245,52 @@
             ok: errors.length === 0,
             hints: hints
         };
+    }
+
+    function isSafeAssetMount(mount) {
+        if (!mount || typeof mount !== 'string') return false;
+        mount = mount.replace(/\\/g, '/');
+        if (!mount || mount.charAt(0) === '/' || mount.indexOf('..') >= 0) return false;
+        return /^[A-Za-z0-9._][A-Za-z0-9._/-]*$/.test(mount);
+    }
+
+    function assetMemberName(mount) {
+        return 'files/' + String(mount).replace(/\\/g, '/');
+    }
+
+    /**
+     * Fetch repository asset contents for Udemy paste/ZIP.
+     * Returns Promise of [{ mount, source, text, member }].
+     */
+    function loadAssets(exercise) {
+        var assets = (exercise && exercise.assets) || [];
+        if (!assets.length) {
+            return Promise.resolve([]);
+        }
+        return Promise.all(assets.map(function (a) {
+            if (!a || !a.source || !a.mount) {
+                return Promise.reject(new Error('Asset declaration missing source/mount'));
+            }
+            if (!isSafeAssetMount(a.mount)) {
+                return Promise.reject(new Error('Invalid asset mount path: ' + a.mount));
+            }
+            var mount = String(a.mount).replace(/\\/g, '/');
+            return fetch(a.source, { credentials: 'same-origin' }).then(function (resp) {
+                if (!resp.ok) {
+                    throw new Error(
+                        'Missing required asset: ' + a.source + ' (' + resp.status + ')'
+                    );
+                }
+                return resp.text().then(function (text) {
+                    return {
+                        mount: mount,
+                        source: a.source,
+                        text: text,
+                        member: assetMemberName(mount)
+                    };
+                });
+            });
+        }));
     }
 
     function buildCompatibilityMarkdown(report) {
@@ -303,14 +349,23 @@
                 builtin: exercise.builtin || null
             },
             files: {
+                title: 'title.txt',
                 learning_objective: 'learning-objective.txt',
                 solution: 'solution.py',
                 evaluation: 'evaluation.py',
                 instructions: 'instructions.html',
-                starter: 'starter.py',
                 hint: 'hint.html',
-                solution_explanation: 'solution-explanation.html'
+                solution_explanation: 'solution-explanation.html',
+                starter: 'starter.py'
             },
+            assets: ((exercise && exercise.assets) || []).map(function (a) {
+                return {
+                    mount: a && a.mount,
+                    source: a && a.source,
+                    member: a && a.mount ? assetMemberName(a.mount) : null
+                };
+            }),
+            title: (exercise.title || '').toString().trim(),
             learning_objective: (exercise.learning_objective || '').toString().trim(),
             hint: (exercise.hint || '').toString().trim(),
             solution_explanation: (exercise.solution_explanation || '').toString().trim(),
@@ -326,7 +381,8 @@
             notes: [
                 'Generated entirely in the browser by PythonGrader.',
                 'Udemy may require manual paste from these files.',
-                'Paste order ends with Hint, then Solution explanation.',
+                'Paste order: title → learning objective → solution → asset files → … → learner file last.',
+                'Create each asset in Udemy with the labeled filename, then paste its contents.',
                 'Instructions, Hint, and Solution explanation are HTML for Udemy RTEs.',
                 'Udemy learner code is ' + UDEMY_STUDENT_FILE +
                     '; evaluation.py is rewritten from ' + NATIVE_STUDENT_FILE + '.'
@@ -334,29 +390,64 @@
         };
     }
 
-    function buildMembers(exercise, report) {
+    /**
+     * Base paste fields; asset files are inserted after solution dynamically.
+     * clipboard: 'html' copies text/html for rich text editors.
+     */
+    var PASTE_FIELDS_BEFORE_ASSETS = [
+        { file: 'title.txt', label: 'Title' },
+        { file: 'learning-objective.txt', label: 'Learning objective' },
+        { file: 'solution.py', label: 'Solution' }
+    ];
+    var PASTE_FIELDS_AFTER_ASSETS = [
+        { file: 'evaluation.py', label: 'Evaluation (unittest)' },
+        { file: 'instructions.html', label: 'Instructions', clipboard: 'html' },
+        { file: 'hint.html', label: 'Hint', clipboard: 'html' },
+        { file: 'solution-explanation.html', label: 'Solution explanation', clipboard: 'html' },
+        { file: 'starter.py', label: 'Learner file' }
+    ];
+
+    function buildPasteFields(loadedAssets) {
+        var fields = PASTE_FIELDS_BEFORE_ASSETS.slice();
+        (loadedAssets || []).forEach(function (a) {
+            fields.push({
+                file: a.member,
+                label: a.mount,
+                asset: true
+            });
+        });
+        return fields.concat(PASTE_FIELDS_AFTER_ASSETS);
+    }
+
+    function buildMembers(exercise, report, loadedAssets) {
         var student = (exercise.files && exercise.files['student.py']) || {};
         var members = {};
+        var title = (exercise.title || '').toString().trim();
+        if (title) {
+            members['title.txt'] = title + '\n';
+        }
         var objective = (exercise.learning_objective || '').toString().trim();
         if (objective) {
             members['learning-objective.txt'] = objective + '\n';
         }
-        // Udemy authoring order ends with hint → solution explanation.
         members['solution.py'] = student.solution || '';
+        (loadedAssets || []).forEach(function (a) {
+            members[a.member] = a.text;
+        });
         members['evaluation.py'] = toUdemyEvaluation(
             (exercise.evaluation && exercise.evaluation.source) || ''
         );
         members['instructions.html'] = toUdemyInstructionsHtml(exercise.prompt || '');
-        members['starter.py'] = student.starter || '';
         var hintHtml = toUdemyRichTextHtml(exercise.hint || '');
         if (hintHtml) {
             members['hint.html'] = hintHtml;
         }
-        // Last Udemy paste field: solution explanation (rich text).
         var explanationHtml = toUdemyRichTextHtml(exercise.solution_explanation || '');
         if (explanationHtml) {
             members['solution-explanation.html'] = explanationHtml;
         }
+        // Learner file is last in the Udemy paste sequence.
+        members['starter.py'] = student.starter || '';
         if (report.hints && report.hints.length) {
             var hintLines = ['# Hints and feedback', ''];
             report.hints.forEach(function (h) {
@@ -368,6 +459,30 @@
         members['manifest.json'] = JSON.stringify(buildManifest(exercise, report), null, 2) + '\n';
         members['COMPATIBILITY.md'] = buildCompatibilityMarkdown(report);
         return members;
+    }
+
+    function buildExportPackage(exercise, loadedAssets) {
+        var report = analyze(exercise);
+        if (!report.ok) {
+            return {
+                ok: false,
+                report: report,
+                markdown: buildCompatibilityMarkdown(report),
+                members: null,
+                pasteFields: buildPasteFields(loadedAssets || []),
+                memberNames: []
+            };
+        }
+        var members = buildMembers(exercise, report, loadedAssets || []);
+        var pasteFields = buildPasteFields(loadedAssets || []);
+        return {
+            ok: true,
+            report: report,
+            markdown: members['COMPATIBILITY.md'],
+            members: members,
+            pasteFields: pasteFields,
+            memberNames: Object.keys(members)
+        };
     }
 
     function zipMembers(members) {
@@ -396,61 +511,76 @@
     }
 
     function exportZip(exercise) {
-        var report = analyze(exercise);
-        if (!report.ok) {
+        return loadAssets(exercise).then(function (loadedAssets) {
+            var pkg = buildExportPackage(exercise, loadedAssets);
+            if (!pkg.ok) {
+                return {
+                    ok: false,
+                    report: pkg.report,
+                    markdown: pkg.markdown,
+                    members: null,
+                    pasteFields: pkg.pasteFields,
+                    filename: null
+                };
+            }
+            var zipBytes = zipMembers(pkg.members);
+            var filename = slugify(exercise.title, exercise.id) + '-udemy.zip';
+            var blob = new Blob([zipBytes], { type: 'application/zip' });
+            downloadBlob(blob, filename);
+            return {
+                ok: true,
+                report: pkg.report,
+                markdown: pkg.markdown,
+                members: pkg.members,
+                pasteFields: pkg.pasteFields,
+                filename: filename
+            };
+        }).catch(function (err) {
+            var message = (err && err.message) || String(err);
+            var report = analyze(exercise);
+            report.errors = (report.errors || []).concat([message]);
+            report.ok = false;
             return {
                 ok: false,
                 report: report,
                 markdown: buildCompatibilityMarkdown(report),
                 members: null,
+                pasteFields: buildPasteFields([]),
                 filename: null
             };
-        }
-        var members = buildMembers(exercise, report);
-        var zipBytes = zipMembers(members);
-        var filename = slugify(exercise.title, exercise.id) + '-udemy.zip';
-        var blob = new Blob([zipBytes], { type: 'application/zip' });
-        downloadBlob(blob, filename);
-        return {
-            ok: true,
-            report: report,
-            markdown: members['COMPATIBILITY.md'],
-            members: members,
-            filename: filename
-        };
+        });
     }
 
     function preview(exercise) {
-        var report = analyze(exercise);
-        var members = report.ok ? buildMembers(exercise, report) : null;
-        return {
-            ok: report.ok,
-            report: report,
-            markdown: buildCompatibilityMarkdown(report),
-            members: members,
-            memberNames: members ? Object.keys(members) : []
-        };
+        return loadAssets(exercise).then(function (loadedAssets) {
+            return buildExportPackage(exercise, loadedAssets);
+        }).catch(function (err) {
+            var message = (err && err.message) || String(err);
+            var report = analyze(exercise);
+            report.errors = (report.errors || []).concat([message]);
+            report.ok = false;
+            return {
+                ok: false,
+                report: report,
+                markdown: buildCompatibilityMarkdown(report),
+                members: null,
+                pasteFields: buildPasteFields([]),
+                memberNames: []
+            };
+        });
     }
 
-    /**
-     * Fields instructors typically paste into the Udemy coding-exercise UI.
-     * clipboard: 'html' copies text/html for rich text editors.
-     */
-    var PASTE_FIELDS = [
-        { file: 'learning-objective.txt', label: 'Learning objective' },
-        { file: 'solution.py', label: 'Solution' },
-        { file: 'evaluation.py', label: 'Evaluation (unittest)' },
-        { file: 'instructions.html', label: 'Instructions', clipboard: 'html' },
-        { file: 'starter.py', label: 'Learner file' },
-        { file: 'hint.html', label: 'Hint', clipboard: 'html' },
-        { file: 'solution-explanation.html', label: 'Solution explanation', clipboard: 'html' }
-    ];
+    /** Static baseline; prefer preview.pasteFields when assets are present. */
+    var PASTE_FIELDS = buildPasteFields([]);
 
     global.PythonGraderUdemyExport = {
         analyze: analyze,
         preview: preview,
         exportZip: exportZip,
+        loadAssets: loadAssets,
         buildMembers: buildMembers,
+        buildPasteFields: buildPasteFields,
+        buildExportPackage: buildExportPackage,
         buildCompatibilityMarkdown: buildCompatibilityMarkdown,
         htmlToMarkdown: htmlToMarkdown,
         toUdemyRichTextHtml: toUdemyRichTextHtml,

@@ -32,7 +32,7 @@ function pythongrader_assignment_catalog() {
         'Exercise85' => 'PY4E: 8.5 From Addresses',
         'Exercise94' => 'PY4E: 9.4 Most Prolific Sender',
         'Exercise102' => 'PY4E: 10.2 Hour Distribution',
-        'Exercise111' => 'PY4E: 11.1 Answer to Life',
+        'Exercise111' => 'PY4E: 11.1 Answer to Life, the Universe and Everything',
         'Exercise119' => 'PY4E: 11.9 Regex Line Count',
     );
 }

@@ -4,30 +4,48 @@
   "id": "tuples-exercise-10-2-001",
   "assignment_version": 1,
   "title": "10.2 Hour Distribution",
-  "prompt": "<p><b>10.2</b> Write a program that prompts for a file name (the autograder will provide <b>mbox-short.txt</b>), reads the file, and figures out the distribution by hour of the day for each of the messages. Pull the hour from the 'From ' line, count by hour, and print counts sorted by hour.</p>",
+  "prompt": "<p><b>10.2</b> Write a program that opens the file <b>mbox-short.txt</b> (hard-code that file name — do not prompt for it) and figures out the distribution by hour of the day for each of the messages. Pull the hour from the 'From ' line, count by hour, and print counts sorted by hour.</p>",
   "learning_objective": "Count messages by hour of day and print the distribution sorted by hour.",
-  "hint": "From each From line, take the time field, split on ':', count by hour, then print sorted(hour, count).",
-  "solution_explanation": "The time token on a From line splits into hour:minute:second. Count by hour in a dictionary, then print the hours in sorted order with their counts.",
+  "hint": "Open mbox-short.txt directly (no input). From each From line, split the time on ':', count by hour, then print sorted(hour, count).",
+  "solution_explanation": "Open mbox-short.txt with a hard-coded name. The time token on a From line splits into hour:minute:second. Count by hour in a dictionary, then print sorted hours and counts.",
   "files": {
     "student.py": {
       "mode": "editable",
-      "starter": "name = input(\"Enter file:\")\nif len(name) < 1:\n    name = \"mbox-short.txt\"\nhandle = open(name)\n",
-      "solution": "name = input(\"Enter file:\")\nif len(name) < 1 : name = \"mbox-short.txt\"\nhandle = open(name)\ncounts = dict()\nfor line in handle:\n    wds = line.split()\n    if len(wds) < 6 : continue\n    if wds[0] != \"From\" : continue\n    when = wds[5]\n    tics = when.split(\":\")\n    if len(tics) != 3 : continue\n    hour = tics[0]\n    counts[hour] = counts.get(hour,0) + 1\n\nfor key, val in sorted(counts.items()):\n    print(key, val)\n"
+      "starter": "handle = open(\"mbox-short.txt\")\n",
+      "solution": "handle = open(\"mbox-short.txt\")\ncounts = dict()\nfor line in handle:\n    wds = line.split()\n    if len(wds) < 6 : continue\n    if wds[0] != \"From\" : continue\n    when = wds[5]\n    tics = when.split(\":\")\n    if len(tics) != 3 : continue\n    hour = tics[0]\n    counts[hour] = counts.get(hour,0) + 1\n\nfor key, val in sorted(counts.items()):\n    print(key, val)\n"
     }
   },
   "run": {
-    "stdin": "mbox-short.txt\n",
+    "stdin": "",
     "timeout_ms": 10000
   },
   "evaluation": {
     "filename": "evaluation.py",
-    "source": "import io\nimport os\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"04 3\\n06 1\\n07 1\\n09 2\\n10 3\\n11 6\\n14 1\\n15 2\\n16 4\\n17 2\\n18 1\\n19 1\"\nDESIRED2 = None\nSTDIN = \"mbox-short.txt\\n\"\n\n\ndef student_file():\n    \"\"\"PythonGrader uses student.py; Udemy coding exercises use exercise.py.\"\"\"\n    for name in ('student.py', 'exercise.py'):\n        if os.path.isfile(name):\n            return name\n    return 'student.py'\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path(student_file(), run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open(student_file(), encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_for(self):\n        self.assertIn(\"for\", self.src,\n            \"You need a for loop to read the lines in the file.\")\n\n    def test_source_sort(self):\n        self.assertIn(\"sort\", self.src,\n            \"You need to use a sort (list sort() or sorted()) to order the hours.\")\n\n",
+    "source": "import io\nimport os\nimport runpy\nimport sys\nimport unittest\nfrom unittest.mock import patch\n\nDESIRED = \"04 3\\n06 1\\n07 1\\n09 2\\n10 3\\n11 6\\n14 1\\n15 2\\n16 4\\n17 2\\n18 1\\n19 1\"\nDESIRED2 = None\nSTDIN = \"\"\n\n\ndef student_file():\n    \"\"\"PythonGrader uses student.py; Udemy coding exercises use exercise.py.\"\"\"\n    for name in ('student.py', 'exercise.py'):\n        if os.path.isfile(name):\n            return name\n    return 'student.py'\n\n\ndef run_student(stdin=STDIN):\n    output = io.StringIO()\n    with patch('builtins.input', side_effect=_input_side_effect(stdin)):\n        with patch('sys.stdout', output):\n            try:\n                runpy.run_path(student_file(), run_name='__main__')\n            except SystemExit:\n                pass\n    return output.getvalue()\n\n\ndef _input_side_effect(stdin):\n    lines = stdin.splitlines()\n    # Preserve trailing blank semantics for programs that call input() once per line\n    if stdin.endswith('\\n'):\n        # splitlines drops final empty; reconstruct queue of lines without newlines\n        pass\n    queue = list(lines)\n\n    def _input(prompt=''):\n        if not queue:\n            raise EOFError('EOF when reading a line')\n        return queue.pop(0)\n\n    return _input\n\n\nclass OutputTests(unittest.TestCase):\n    def test_desired_output(self):\n        got = run_student().rstrip()\n        # Normalize trailing whitespace per line for friendlier comparison\n        got_norm = '\\n'.join(line.rstrip() for line in got.splitlines()).rstrip()\n        want = DESIRED.rstrip() if isinstance(DESIRED, str) else DESIRED\n        alts = [want]\n        if DESIRED2:\n            alts.append(DESIRED2.rstrip())\n        if got_norm not in alts:\n            self.assertEqual(got_norm, want)\n\n\nclass SourceTests(unittest.TestCase):\n    @classmethod\n    def setUpClass(cls):\n        with open(student_file(), encoding='utf-8') as f:\n            cls.src = f.read()\n\n    def test_source_open(self):\n        self.assertIn(\"open\", self.src,\n            \"You need to use open() to open the file.\")\n\n    def test_source_mbox_short_txt(self):\n        self.assertIn(\"mbox-short.txt\", self.src,\n            \"Hard-code the file name mbox-short.txt \\u2014 do not prompt for it.\")\n\n    def test_source_not_input(self):\n        self.assertNotIn(\"input\", self.src,\n            \"Do not prompt for the file name \\u2014 open mbox-short.txt directly.\")\n\n    def test_source_for(self):\n        self.assertIn(\"for\", self.src,\n            \"You need a for loop to read the lines in the file.\")\n\n    def test_source_sort(self):\n        self.assertIn(\"sort\", self.src,\n            \"You need to use a sort (list sort() or sorted()) to order the hours.\")\n\n",
     "tests": {
       "OutputTests.test_desired_output": {
         "title": "Matches desired output",
         "group": "Output",
-        "points": 8,
+        "points": 10,
         "feedback": "Compare your program output carefully to the Desired Output."
+      },
+      "SourceTests.test_source_open": {
+        "title": "Source check: require 'open'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "You need to use open() to open the file."
+      },
+      "SourceTests.test_source_mbox_short_txt": {
+        "title": "Source check: require 'mbox-short.txt'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "Hard-code the file name mbox-short.txt — do not prompt for it."
+      },
+      "SourceTests.test_source_not_input": {
+        "title": "Source check: forbid 'input'",
+        "group": "Source requirements",
+        "points": 1,
+        "feedback": "Do not prompt for the file name — open mbox-short.txt directly."
       },
       "SourceTests.test_source_for": {
         "title": "Source check: require 'for'",
@@ -52,7 +70,7 @@
   ],
   "packages": [],
   "grading": {
-    "maximum_points": 10,
+    "maximum_points": 15,
     "partial_credit": true
   },
   "exports": {
