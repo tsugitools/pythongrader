@@ -60,6 +60,39 @@
         return toUdemyRichTextHtml(html);
     }
 
+    /**
+     * Always appended to Udemy hint.html so learners can use the PY4E grader.
+     * Uses catalog builtin key when present (?exercise=Hello).
+     */
+    function buildPy4eGraderHintFooter(exercise) {
+        var key = '';
+        if (exercise && exercise.builtin) {
+            key = String(exercise.builtin).trim();
+        }
+        var url = 'https://www.py4e.com/mod/pythongrader/';
+        if (key) {
+            url += '?exercise=' + encodeURIComponent(key);
+        }
+        return (
+            '<p>-----------</p>\n'
+            + '<p><em>You can do this assignment using the PY4E auto grader which '
+            + 'gives more detail and is easier to test and debug and develop '
+            + 'the program.</em></p>\n'
+            + '<p><a href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">'
+            + escapeHtml(url) + '</a></p>\n'
+            + '<p><em>It is the same assignment but you must copy your solution '
+            + 'back to Udemy to submit for a grade in Udemy.</em></p>\n'
+        );
+    }
+
+    function toUdemyHintHtml(html, exercise) {
+        var body = toUdemyRichTextHtml(html || '');
+        if (body.indexOf('py4e.com/mod/pythongrader') >= 0) {
+            return body;
+        }
+        return body + buildPy4eGraderHintFooter(exercise);
+    }
+
     function escapeHtml(s) {
         return String(s)
             .replace(/&/g, '&amp;')
@@ -186,10 +219,10 @@
 
         var hint = exercise && typeof exercise.hint === 'string'
             ? exercise.hint.trim() : '';
-        if (hint) {
-            compatible.push('hint');
-        } else {
-            partial.push('Missing hint (Udemy learner Hint field)');
+        // hint.html always includes the PY4E grader note; author text is optional.
+        compatible.push('hint');
+        if (!hint) {
+            partial.push('Author hint empty (PY4E grader note is still appended)');
         }
 
         var explanation = exercise && typeof exercise.solution_explanation === 'string'
@@ -438,10 +471,7 @@
             (exercise.evaluation && exercise.evaluation.source) || ''
         );
         members['instructions.html'] = toUdemyInstructionsHtml(exercise.prompt || '');
-        var hintHtml = toUdemyRichTextHtml(exercise.hint || '');
-        if (hintHtml) {
-            members['hint.html'] = hintHtml;
-        }
+        members['hint.html'] = toUdemyHintHtml(exercise.hint || '', exercise);
         var explanationHtml = toUdemyRichTextHtml(exercise.solution_explanation || '');
         if (explanationHtml) {
             members['solution-explanation.html'] = explanationHtml;
@@ -585,6 +615,7 @@
         htmlToMarkdown: htmlToMarkdown,
         toUdemyRichTextHtml: toUdemyRichTextHtml,
         toUdemyInstructionsHtml: toUdemyInstructionsHtml,
+        toUdemyHintHtml: toUdemyHintHtml,
         toUdemyEvaluation: toUdemyEvaluation,
         slugify: slugify,
         PASTE_FIELDS: PASTE_FIELDS,
